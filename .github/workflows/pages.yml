@@ -1,0 +1,106 @@
+name: Deploy GitHub Pages
+
+# Mesmo destino do convite-aniversario (Pages na branch main), só que aqui
+# o pipeline é versionado: dá pra ler o log, editar e adicionar checagens.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  validar:
+    name: Validar o site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checar referências locais quebradas
+        run: |
+          python3 - <<'PY'
+          import re, sys, os, glob
+
+          erros = []
+
+          html_bruto = open('index.html', encoding='utf-8').read()
+          # comentários não contam: eles citam exemplos que não são código real
+          html = re.sub(r'<!--.*?-->', '', html_bruto, flags=re.S)
+
+          # src/href apontando para arquivos locais que não existem
+          # (?<![-\w]) evita casar data-cfg-href= como se fosse href=
+          refs = re.findall(r'(?<![-\w])(?:src|href)=["\']([^"\']+)["\']', html)
+          for ref in refs:
+              if ref.startswith(('http://', 'https://', '#', 'data:', 'mailto:', '//')):
+                  continue
+              caminho = ref.split('?')[0].split('#')[0]
+              if caminho and not os.path.exists(caminho):
+                  erros.append(f'referência quebrada em index.html: {ref}')
+
+          # todo <use href="#motif-x"> precisa ter um <symbol id="motif-x">
+          simbolos = set(re.findall(r'<symbol\s+id="([^"]+)"', html))
+          for uso in set(re.findall(r'<use\s+href="#([^"]+)"', html)):
+              if uso not in simbolos:
+                  erros.append(f'<use href="#{uso}"> sem <symbol> correspondente')
+
+          # ids referenciados pelo JS precisam existir — no HTML estático
+          # ou nos templates que o próprio JS injeta (modal, palco da revelação)
+          js = open('script.js', encoding='utf-8').read()
+          ids_conhecidos = set(re.findall(r'\bid="([^"]+)"', html))
+          ids_conhecidos |= set(re.findall(r'\bid="([^"]+)"', js))
+          for jid in set(re.findall(r'getElementById\([\'"]([^\'"]+)[\'"]\)', js)):
+              if jid not in ids_conhecidos:
+                  erros.append(f'script.js busca #{jid}, que não existe em lugar nenhum')
+
+          if erros:
+              print('\n'.join('::error::' + e for e in erros))
+              sys.exit(1)
+          print('OK: nenhuma referência quebrada.')
+          PY
+
+      - name: Avisar sobre CONFIG ainda pendente
+        continue-on-error: true
+        run: |
+          python3 - <<'PY'
+          import re
+          js = open('script.js', encoding='utf-8').read()
+          pendentes = []
+          checagens = {
+              r"mapsUrl:\s*''":        'CONFIG.mapsUrl vazio',
+              r"whatsappGrupo:\s*''":  'CONFIG.whatsappGrupo vazio',
+              r"whatsappNumero:\s*''": 'CONFIG.whatsappNumero vazio',
+              r"local:\s*'A definir'": 'CONFIG.local ainda é "A definir"',
+              r"sheetsEndpoint:\s*''": 'CONFIG.sheetsEndpoint vazio (RSVP só no localStorage)',
+              r"pixChave:\s*'chave-pix-a-definir'": 'CONFIG.rifa.pixChave não configurada',
+          }
+          for padrao, msg in checagens.items():
+              if re.search(padrao, js):
+                  pendentes.append(msg)
+          for p in pendentes:
+              print(f'::warning::{p}')
+          print('Pendências:', len(pendentes))
+          PY
+
+  deploy:
+    name: Publicar
+    needs: validar
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
