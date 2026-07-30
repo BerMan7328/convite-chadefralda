@@ -5532,3 +5532,11 @@ body.revelacao-aberta { overflow: hidden; }
   .foto-polaroid:hover .foto-botao { transform: none; }
   .foto-polaroid:hover .foto-janela img { transform: none; }
 }
+
+/* botões de agenda na tela de boas-vindas */
+.link-btn-agenda {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.link-btn-agenda svg { width: 16px; height: 16px; flex: 0 0 auto; }

@@ -1142,8 +1142,10 @@ function initRSVP() {
     }
   });
 
-  const btnIcs = document.getElementById('btn-ics-final');
-  if (btnIcs) btnIcs.addEventListener('click', downloadICS);
+  ['btn-ics-final', 'btn-ics-welcome'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.addEventListener('click', downloadICS);
+  });
 }
 
 function showConfirmation(data, sheetsOk) {
