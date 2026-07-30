@@ -8,8 +8,9 @@ reaproveitando a engine de navegação, modais, quiz, trilha e RSVP.
 
 ## Como o convite funciona
 
-O convite finge ser um **chá revelação**: 16 capítulos, Time Azul × Time Rosa,
-envelope lacrado. O convidado vota em menino ou menina e preenche a confirmação.
+É um chá de fralda — todo mundo sabe. Mas o convite propõe uma brincadeira:
+16 capítulos, Time Azul × Time Rosa, envelope lacrado. O convidado chuta
+menino ou menina e preenche a confirmação.
 
 **Só então** roda a animação de revelação: o medidor oscila entre
 `MENINO — Jorge Rodrigo` e `MENINA — Anna Laura`, dá três quase-decisões
@@ -91,9 +92,9 @@ em vez de levar a lugar nenhum.
 
 | Arquivo | O que é |
 |---|---|
-| `index.html` | Os 15 capítulos + o sprite SVG de ilustrações |
+| `index.html` | Os 16 capítulos + o sprite SVG de ilustrações |
 | `script.js` | `CONFIG` no topo, depois a engine (navegação, palpite, rifa, quiz, RSVP) |
-| `style.css` | Engine herdada + bloco `TEMA CHÁ REVELAÇÃO` no fim |
+| `style.css` | Engine herdada + bloco `TEMA CHÁ DE FRALDA` no fim |
 | `.github/workflows/pages.yml` | Valida e publica no Pages |
 | `SHEETS_SETUP.md` | Como ligar o RSVP e a rifa numa planilha do Google |
 
@@ -173,5 +174,4 @@ Configurada em `CONFIG.rifa`. A cartela de números é gerada por JS.
 - O clique só **abre o WhatsApp com a mensagem pronta**; a reserva de fato
   acontece quando você confirmar o PIX e adicionar o número em `vendidos`.
 
-Formato de "ação entre amigos" restrita a convidados — sorteio ao vivo no dia,
-junto com a revelação.
+Formato de "ação entre amigos" restrita a convidados — sorteio ao vivo no dia da festa.

@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   E AÍ, QUAL É??? — Chá Revelação · script
+   E AÍ, QUAL É??? — Chá de Fralda · script
    Baseado na engine do convite-aniversario (Grand Line).
 ══════════════════════════════════════════════════════════════ */
 
@@ -102,7 +102,7 @@ const DERIVADO = {
   dataCurta:      `${D.dia} de ${MESES[D.mes - 1]} · ${D.ano}`,
   dataLongaCurta: `${D.dia} de ${MESES[D.mes - 1]} · ${D.ano} · ${DIAS_SEMANA[dtEvento().getDay()]} · ${D.hora}h`,
   horaExtra:      `${DIAS_SEMANA[dtEvento().getDay()]}, a partir das ${D.hora}h`,
-  tituloEvento:   `Chá Revelação — ${CONFIG.casal}`,
+  tituloEvento:   `Chá de Fralda — ${CONFIG.casal}`,
   rifaValor:      `R$ ${CONFIG.rifa.valor}`,
   rifaTotal:      `${CONFIG.rifa.total} números`,
 };
@@ -442,7 +442,7 @@ function navigateTo(index, smooth = true) {
 /* ════════════════════════════════════════════════════════════
    PALPITE — a votação do capítulo XI
 ════════════════════════════════════════════════════════════ */
-const PALPITE_KEY = 'cha-revelacao-palpite';
+const PALPITE_KEY = 'cha-de-fralda-palpite';
 
 function initPalpite() {
   const arena = document.getElementById('palpite-arena');
@@ -565,7 +565,7 @@ function selecionarNumeroRifa(n) {
   const link = document.getElementById('rifa-whatsapp');
   if (link) {
     const msg = [
-      `Oi! Quero reservar o número *${pad2(n)}* da ação entre amigos do chá revelação.`,
+      `Oi! Quero reservar o número *${pad2(n)}* da ação entre amigos do chá de fralda.`,
       ``,
       `Prêmio: ${CONFIG.rifa.premio}`,
       `Valor: R$ ${CONFIG.rifa.valor}`,
@@ -620,7 +620,7 @@ async function buscarNumerosVendidos() {
 ════════════════════════════════════════════════════════════ */
 const QUIZ = [
   {
-    q: 'Qual é a data do chá revelação?',
+    q: 'Qual é a data do chá de fralda?',
     options: ['10/10/2026', '01/10/2026', '10/11/2026', '20/10/2026'],
     correct: 0,
     explanation: 'Dia 10/10/2026, sábado. Fácil de decorar: dez, dez.',
@@ -1000,7 +1000,7 @@ function initModal() {
 /* ════════════════════════════════════════════════════════════
    RSVP
 ════════════════════════════════════════════════════════════ */
-const RSVP_STORAGE_KEY = 'cha-revelacao-rsvp';
+const RSVP_STORAGE_KEY = 'cha-de-fralda-rsvp';
 
 function saveRsvpLocally(data) {
   try {
@@ -1014,7 +1014,7 @@ function saveRsvpLocally(data) {
 
 function buildWhatsappMessage(data) {
   const lines = [
-    `🍼 *Confirmação — Chá Revelação ${CONFIG.casal}*`,
+    `🍼 *Confirmação — Chá de Fralda ${CONFIG.casal}*`,
     '',
     `*Nome:* ${data.nome || '-'}`,
     `*WhatsApp:* ${data.whatsapp || '-'}`,
@@ -1182,7 +1182,7 @@ function downloadICS() {
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Cha Revelacao//PT-BR',
+    'PRODID:-//Cha de Fralda//PT-BR',
     'BEGIN:VEVENT',
     `DTSTART:${icsStamp(CONFIG.dataInicio)}`,
     `DTEND:${icsStamp(CONFIG.dataFim)}`,
@@ -1198,7 +1198,7 @@ function downloadICS() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'cha-revelacao.ics';
+  a.download = 'cha-de-fralda.ics';
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1209,7 +1209,7 @@ function downloadICS() {
    Ordem: abertura → suspense → oscilação com fintas → estouro
           → nome → veredito. Pode ser pulada a qualquer momento.
 ════════════════════════════════════════════════════════════ */
-const REVELADO_KEY = 'cha-revelacao-revelado';
+const REVELADO_KEY = 'cha-de-fralda-revelado';
 
 function jaRevelou() {
   try { return localStorage.getItem(REVELADO_KEY) === '1'; } catch (e) { return false; }
@@ -1542,7 +1542,7 @@ function initGrupoTracking() {
   document.querySelectorAll('[data-cfg-href="whatsappGrupo"]').forEach(el => {
     el.addEventListener('click', () => {
       registrarEvento('grupo-clique', { origem: el.dataset.origem || 'link' });
-      try { localStorage.setItem('cha-revelacao-grupo', '1'); } catch (e) {}
+      try { localStorage.setItem('cha-de-fralda-grupo', '1'); } catch (e) {}
       const check = document.getElementById('rsvp-grupo');
       if (check) check.checked = true;
     });
@@ -1550,7 +1550,7 @@ function initGrupoTracking() {
 
   // se já clicou numa visita anterior, marca o checkbox do formulário
   try {
-    if (localStorage.getItem('cha-revelacao-grupo') === '1') {
+    if (localStorage.getItem('cha-de-fralda-grupo') === '1') {
       const check = document.getElementById('rsvp-grupo');
       if (check) check.checked = true;
     }
@@ -1752,7 +1752,7 @@ function setSoundOn(on) {
       if (a && !a.paused) fadeAudio(a, a.volume, 0, 400, () => a.pause());
     });
   }
-  try { localStorage.setItem('cha-revelacao-sound', STATE.soundOn ? '1' : '0'); } catch (e) {}
+  try { localStorage.setItem('cha-de-fralda-sound', STATE.soundOn ? '1' : '0'); } catch (e) {}
 }
 
 function initSound() {
@@ -1780,7 +1780,7 @@ function initSound() {
   }
 
   try {
-    if (localStorage.getItem('cha-revelacao-sound') === '1') STATE.soundOn = true;
+    if (localStorage.getItem('cha-de-fralda-sound') === '1') STATE.soundOn = true;
   } catch (e) {}
 }
 
