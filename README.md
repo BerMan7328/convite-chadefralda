@@ -112,13 +112,25 @@ visualizador com navegação. Com a lista vazia, mostra "álbum em construção"
 
 ## Design
 
-Escrito do zero, sem herdar nada de outro convite. A linguagem é branco e ar,
-formas orgânicas desfocadas ao fundo, cards flutuantes de canto muito
-arredondado, e azul↔rosa apenas nos acentos.
+Direção tirada da referência de decoração do evento: **verde-sálvia, creme e
+dourado**.
 
-- Display: **Fraunces**. Texto: **Outfit**. Manuscrito: **Caveat**.
-- Todas as cores e raios são variáveis CSS no `:root`.
-- Respeita `prefers-reduced-motion`: desliga blobs, balões e entradas.
+- **Painéis em arco** (`--arco`) nos cartões principais, com fio de ouro interno
+- **Textura ripada** nas colunas do enxoval, imitando os pedestais
+- **Guirlanda de balões** e **ramos botânicos** em SVG, no `<defs>` do HTML
+- **Letreiro dourado com halo** no título da capa
+- Cortinas de sálvia nas laterais e luzinhas piscando ao fundo
+
+Fontes: **Cormorant Garamond** (display), **Great Vibes** (script),
+**Outfit** (interface).
+
+A paleta é neutra de propósito. Além de casar com a decoração, ela evita o
+problema da versão anterior: azul e rosa dominando a página inteira davam cara
+de chá revelação e entregavam a brincadeira. Agora essas duas cores aparecem
+**só dentro dos cartões do palpite**.
+
+Todas as cores e raios são variáveis no `:root`. Respeita
+`prefers-reduced-motion`.
 
 ---
 
