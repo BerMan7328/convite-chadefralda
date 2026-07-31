@@ -48,9 +48,11 @@ const CONFIG = {
     // ⚠️ PENDENTE — dados do PIX. Os três primeiros são obrigatórios
     // para gerar o "copia e cola"; sem eles só a chave é exibida.
     pix: {
-      chave:  '',       // CPF, telefone, e-mail ou chave aleatória
-      nome:   '',       // nome do titular, como está no banco (máx. 25)
-      cidade: '',       // cidade do titular (máx. 15), ex.: 'BELO HORIZONTE'
+      // Chave de telefone no BR Code vai com +55 e DDD. Só os dígitos
+      // soltos ('31983790303') fazem parte dos bancos recusar o código.
+      chave:  '+5531983790303',
+      nome:   'Rodrigo Lino Malta',   // como está no banco (máx. 25)
+      cidade: 'Belo Horizonte',       // (máx. 15)
     },
 
     // números já ocupados na mão. O site também lê os da planilha.
