@@ -1,4 +1,4 @@
-# E aí, qual é??? — Chá de fralda da Anna Laura
+# Falta pouco — Chá de fralda da Anna Laura
 
 Convite interativo em página única. Site estático (HTML + CSS + JS, sem build,
 sem dependência) publicado no GitHub Pages.
@@ -8,7 +8,7 @@ sem dependência) publicado no GitHub Pages.
 São **8 seções** em rolagem vertical com *scroll-snap*, cada uma ocupando a tela
 inteira, com trilho de progresso na lateral e animação de entrada por seção:
 
-1. **Capa** — o gancho, a data e a contagem regressiva
+1. **Capa** — "Falta pouco", a data e a contagem regressiva
 2. **A história** — Rodrigo, Clara e a Maitê
 3. **A notícia** — a surpresa que virou bênção
 4. **A festa** — data, local, cardápio e botões de agenda/mapa

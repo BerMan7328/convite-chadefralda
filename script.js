@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   E AÍ, QUAL É??? — chá de fralda · script
+   FALTA POUCO — chá de fralda · script
 ══════════════════════════════════════════════════════════════ */
 
 /* ┌──────────────────────────────────────────────────────────┐
@@ -39,13 +39,15 @@ const CONFIG = {
   whatsappNumero: '',             // só dígitos, ex.: '5531999999999'
 
   // ── Ação entre amigos ─────────────────────────────────────
-  // Não tem cartela: quem confirma presença ganha um número.
+  // Cartela de números: o convidado escolhe o dele, e o número
+  // viaja junto com a confirmação de presença.
   sorteio: {
     ativo:  true,
     premio: "Kit Jack Daniel's (garrafa + copo)",
-    // faixa dos números gerados
-    de:  1000,
-    ate: 9999,
+    total:  100,      // quantos números tem a cartela
+    // números já ocupados. O site também tenta ler os que já foram
+    // usados na planilha; esta lista é o complemento manual.
+    ocupados: [],
   },
 
   // ── Galeria do último slide ───────────────────────────────
@@ -313,13 +315,127 @@ function mascaraTelefone(bruto) {
   return `(${d.slice(0,2)}) ${d.slice(2,3)} ${d.slice(3,7)}-${d.slice(7)}`;
 }
 
-function gerarNumeroSorte() {
-  const salvo = ls.get(CHAVES.numero);
-  if (salvo) return parseInt(salvo, 10);
-  const { de, ate } = CONFIG.sorteio;
-  const n = Math.floor(Math.random() * (ate - de + 1)) + de;
+/* ══════════════════════════════════════════════════════════════
+   CARTELA — a tela dos 100 números
+══════════════════════════════════════════════════════════════ */
+const OCUPADOS = new Set();
+
+function initCartela() {
+  const grade = document.getElementById('cartela');
+  if (!grade) return;
+
+  if (!CONFIG.sorteio.ativo) {
+    const sec = grade.closest('.slide');
+    if (sec) sec.remove();
+    return;
+  }
+
+  (CONFIG.sorteio.ocupados || []).forEach(n => OCUPADOS.add(Number(n)));
+
+  const frag = document.createDocumentFragment();
+  for (let n = 1; n <= CONFIG.sorteio.total; n++) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'num';
+    b.textContent = pad2(n);
+    b.dataset.n = n;
+    frag.appendChild(b);
+  }
+  grade.appendChild(frag);
+
+  grade.addEventListener('click', e => {
+    const b = e.target.closest('.num');
+    if (b && !b.disabled) escolherNumero(Number(b.dataset.n));
+  });
+
+  // Enquanto não soubermos quais números já foram tomados, a cartela fica
+  // travada. Sem isso, alguém escolheria um número que já era de outra
+  // pessoa só porque a resposta da planilha ainda não tinha chegado.
+  if (CONFIG.sheetsEndpoint) {
+    grade.classList.add('verificando');
+    const aviso = document.getElementById('cartela-eco');
+    if (aviso) {
+      aviso.textContent = 'Conferindo quais números ainda estão livres...';
+      aviso.classList.remove('hidden');
+    }
+  }
+
+  pintarOcupados();
+
+  buscarNumerosUsados().finally(() => {
+    grade.classList.remove('verificando');
+    const aviso = document.getElementById('cartela-eco');
+    if (aviso && !STATE.numeroSorte) aviso.classList.add('hidden');
+
+    // só agora vale recuperar a escolha de uma visita anterior:
+    // ela pode ter sido tomada por outra pessoa nesse meio-tempo
+    const salvo = parseInt(ls.get(CHAVES.numero) || '', 10);
+    if (salvo && !OCUPADOS.has(salvo)) {
+      escolherNumero(salvo, true);
+    } else if (salvo) {
+      ls.set(CHAVES.numero, '');
+      toast(`O número ${pad2(salvo)} foi escolhido por outra pessoa. Pega outro!`);
+    }
+  });
+}
+
+function pintarOcupados() {
+  const travada = document.getElementById('cartela')?.classList.contains('verificando');
+  document.querySelectorAll('.num').forEach(b => {
+    const n = Number(b.dataset.n);
+    const ocupado = OCUPADOS.has(n) && n !== STATE.numeroSorte;
+    b.classList.toggle('ocupado', ocupado);
+    b.disabled = ocupado || travada;
+    b.title = ocupado ? 'Número já escolhido' : '';
+  });
+}
+
+function escolherNumero(n, silencioso) {
+  if (OCUPADOS.has(n) && n !== STATE.numeroSorte) return;
+
+  STATE.numeroSorte = n;
   ls.set(CHAVES.numero, String(n));
-  return n;
+
+  document.querySelectorAll('.num').forEach(b =>
+    b.classList.toggle('meu', Number(b.dataset.n) === n));
+
+  const eco = document.getElementById('cartela-eco');
+  if (eco) {
+    eco.innerHTML = `Seu número é o <b>${pad2(n)}</b>. Ele vai junto com a sua confirmação.`;
+    eco.classList.remove('hidden');
+  }
+
+  if (!silencioso) {
+    toast(`Número ${pad2(n)} é seu! 🎟️`);
+    confete('duo', 16);
+  }
+}
+
+/* Se ninguém escolheu, o site pega um número livre na confirmação */
+function numeroLivreAleatorio() {
+  const livres = [];
+  for (let n = 1; n <= CONFIG.sorteio.total; n++) {
+    if (!OCUPADOS.has(n)) livres.push(n);
+  }
+  if (!livres.length) return null;
+  return livres[Math.floor(Math.random() * livres.length)];
+}
+
+/* Lê da planilha os números já usados por outras confirmações */
+async function buscarNumerosUsados() {
+  if (!CONFIG.sheetsEndpoint) return;
+  try {
+    const res = await fetch(`${CONFIG.sheetsEndpoint}?tipo=numeros-usados`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const { usados } = await res.json();
+    if (!Array.isArray(usados)) return;
+    usados.map(Number).filter(n => !isNaN(n)).forEach(n => OCUPADOS.add(n));
+    pintarOcupados();
+  } catch (err) {
+    // a cartela destrava mesmo assim: melhor deixar escolher às cegas
+    // do que travar todo mundo porque a planilha não respondeu
+    console.info('[cartela] não deu pra ler os números usados da planilha.', err);
+  }
 }
 
 function initFormulario() {
@@ -361,8 +477,26 @@ function initFormulario() {
     delete dados.grupo;
 
     if (CONFIG.sorteio.ativo) {
-      STATE.numeroSorte = gerarNumeroSorte();
-      dados.numero_sorte = STATE.numeroSorte;
+      // reconfere na planilha: o número pode ter sido tomado enquanto
+      // a pessoa preenchia o formulário
+      await buscarNumerosUsados();
+
+      if (STATE.numeroSorte && OCUPADOS.has(STATE.numeroSorte)) {
+        const antigo = STATE.numeroSorte;
+        STATE.numeroSorte = null;
+        const novo = numeroLivreAleatorio();
+        if (novo) {
+          escolherNumero(novo, true);
+          toast(`O ${pad2(antigo)} foi levado. Seu número agora é o ${pad2(novo)}.`, 4200);
+        }
+      }
+
+      // não escolheu na cartela? o site reserva um livre
+      if (!STATE.numeroSorte) {
+        const n = numeroLivreAleatorio();
+        if (n) escolherNumero(n, true);
+      }
+      dados.numero_sorte = STATE.numeroSorte || '';
     }
 
     STATE.nome = dados.nome || '';
@@ -401,7 +535,7 @@ function mostrarConfirmado(dados, ok) {
   if (sorte && CONFIG.sorteio.ativo && STATE.numeroSorte) {
     sorte.innerHTML = `
       <span class="sorte-rot">seu número da sorte</span>
-      <span class="sorte-num">${STATE.numeroSorte}</span>
+      <span class="sorte-num">${pad2(STATE.numeroSorte)}</span>
       <span class="sorte-sub">Concorre ao ${CONFIG.sorteio.premio}, sorteado ao vivo no dia da festa.</span>`;
   } else if (sorte) {
     sorte.classList.add('hidden');
@@ -892,6 +1026,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavegacao();
   initContador();
   initPalpite();
+  initCartela();
   initFormulario();
   initAlbum();
   initLightbox();

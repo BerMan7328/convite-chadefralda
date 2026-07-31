@@ -79,6 +79,17 @@ function doPost(e) {
 function doGet(e) {
   const tipo = e.parameter.tipo;
 
+  // Números já reservados por quem confirmou — a cartela lê isto
+  // antes de deixar alguém escolher.
+  if (tipo === 'numeros-usados') {
+    const linhas = aba('RSVP').getDataRange().getValues().slice(1);
+    const col = CABECALHOS.RSVP.indexOf('Número da sorte');
+    const usados = linhas
+      .map(l => Number(l[col]))
+      .filter(n => n && !isNaN(n));
+    return json({ usados });
+  }
+
   if (tipo === 'recados') {
     const recados = aba('Recados').getDataRange().getValues().slice(1)
       .map(l => ({ nome: l[1], recado: l[2] }))
@@ -124,14 +135,24 @@ envia como `text/plain` e o Apps Script faz o parse. Efeito colateral: a respost
 é opaca, então o site não consegue confirmar o status — ele assume sucesso e
 **sempre** guarda um backup no `localStorage`.
 
-**O número da sorte é sorteado no navegador de quem confirma.**
-Ele é gerado aleatoriamente entre `CONFIG.sorteio.de` e `.ate` (1000–9999 por
-padrão) e fica guardado no aparelho da pessoa, então ela vê sempre o mesmo número
-se voltar ao site. Como não existe servidor coordenando, **dois convidados podem
-tirar o mesmo número** — com ~100 confirmações a chance é de poucos por cento.
-Na hora do sorteio, use a coluna *Número da sorte* da aba `RSVP` como fonte da
-verdade: sorteie entre os números que realmente aparecem lá. Se dois nomes
-tiverem o mesmo, o mais simples é premiar os dois ou desempatar na hora.
+**Como a cartela de 100 números sabe o que já foi reservado**
+
+A planilha é a fonte da verdade. A sequência é:
+
+1. a página desenha os 100 números **travados**, num estado de carregamento;
+2. chama `?tipo=numeros-usados`, que devolve a coluna *Número da sorte* da aba `RSVP`;
+3. marca os ocupados, destrava a cartela e só então aceita cliques;
+4. no envio do formulário, **reconfere**: se o número da pessoa tiver sido levado
+   enquanto ela preenchia, o site troca por um livre e avisa na tela.
+
+Se a planilha não responder, a cartela destrava assim mesmo — é melhor deixar
+escolher às cegas do que travar todo mundo. Nesse caso a lista manual
+`CONFIG.sorteio.ocupados` é o que vale.
+
+**Ainda assim existe uma corrida possível:** dois convidados que cliquem no mesmo
+número no mesmo instante só descobrem o conflito no envio, e o segundo é
+realocado. Não dá pra eliminar isso sem um servidor que faça reserva com trava —
+para uma festa, realocar com aviso resolve.
 
 **O mural é público.** Qualquer pessoa com o link escreve. O site exibe os
 recados como texto puro (nunca como HTML), então ninguém consegue injetar nada
