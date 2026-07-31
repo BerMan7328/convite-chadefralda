@@ -25,12 +25,16 @@ animação: um medidor oscila entre `MENINO — Jorge Rodrigo` e
 finalmente crava **MENINA**, com confete, balões e o nome **Anna Laura**
 aparecendo letra a letra. Aí destrava a seção 8.
 
-### 🚨 Cuidado com spoiler
+### Cuidado com spoiler
 
-O grupo do WhatsApp se chama *"Convite chá de fralda Anna Laura"* — o nome
-entrega a brincadeira. Por isso o link e o QR do grupo **só aparecem depois da
-confirmação**. O `<title>`, o Open Graph e os textos das seções também não citam
-o nome em lugar nenhum.
+O `<title>`, o Open Graph e os textos das seções não citam o nome do bebê em
+lugar nenhum — ele só aparece na animação, depois da confirmação.
+
+O grupo do WhatsApp já se chamou *"Convite chá de fralda Anna Laura"*, e o nome
+entregava a brincadeira; por isso o link vivia só no bloco pós-confirmação.
+O grupo foi renomeado, então agora o atalho também aparece na capa. **Se o nome
+do bebê voltar para o título do grupo, tire o atalho da capa** — senão o convite
+se estraga sozinho.
 
 ---
 
