@@ -60,10 +60,55 @@ const CONFIG = {
   // ── Galeria do último slide ───────────────────────────────
   // Aceita 'foto', 'gif' e 'video'. Arquivos em assets/galeria/.
   galeria: [
-    // { tipo: 'foto',  src: 'assets/galeria/ultrassom.jpeg', titulo: 'O primeiro retrato',
-    //   comentario: 'A primeira vez que a gente viu esse rostinho.' },
-    // { tipo: 'video', src: 'assets/galeria/chute.mp4', poster: 'assets/galeria/capa.jpeg',
-    //   titulo: 'O primeiro chute', comentario: 'Som ligado. Vale a pena.' },
+    { tipo: 'foto', src: 'assets/galeria/01-os-dois.jpeg',
+      titulo: 'Os dois',
+      comentario: 'Antes de virar história de bebê, era só história de amor.' },
+
+    { tipo: 'foto', src: 'assets/galeria/02-na-rua.jpeg',
+      titulo: 'Sem pose',
+      comentario: 'A cara de quem não sabe posar pra foto — e nem quer aprender.' },
+
+    { tipo: 'foto', src: 'assets/galeria/03-preguica.jpeg',
+      titulo: 'Domingo',
+      comentario: 'Existe felicidade em não ter nada pra fazer.' },
+
+    { tipo: 'video', src: 'assets/galeria/04-festa.mp4',
+      poster: 'assets/galeria/04-festa-capa.jpg',
+      titulo: 'Arrumadinhos',
+      comentario: 'Quando a gente resolve caprichar, o resultado é esse.' },
+
+    { tipo: 'video', src: 'assets/galeria/05-festa-mesa.mp4',
+      poster: 'assets/galeria/05-festa-mesa-capa.jpg',
+      titulo: 'Na festa',
+      comentario: 'Dançar não é o forte, mas a gente compensa na animação.' },
+
+    { tipo: 'video', src: 'assets/galeria/06-espelho.mp4',
+      poster: 'assets/galeria/06-espelho-capa.jpg',
+      titulo: 'De terno',
+      comentario: 'O papai ensaiando a pose de foto de maternidade.' },
+
+    { tipo: 'foto', src: 'assets/galeria/07-maite.jpeg',
+      titulo: 'A irmã mais velha',
+      comentario: 'A Maitê dormindo no colo — o lugar preferido dela no mundo.' },
+
+    { tipo: 'video', src: 'assets/galeria/08-ultrassom.mp4',
+      poster: 'assets/galeria/08-ultrassom-capa.jpg',
+      titulo: 'O primeiro retrato',
+      comentario: 'A primeira vez que a gente viu esse rostinho na tela. Difícil descrever.' },
+
+    { tipo: 'video', src: 'assets/galeria/09-laudo.mp4',
+      poster: 'assets/galeria/09-laudo-capa.jpg',
+      titulo: 'O laudo',
+      comentario: 'Lido e relido no carro, no mesmo dia, uma porção de vezes.' },
+
+    { tipo: 'video', src: 'assets/galeria/10-barriga.mp4',
+      poster: 'assets/galeria/10-barriga-capa.jpg',
+      titulo: 'Amor de pai',
+      comentario: 'O primeiro beijo, dado antes mesmo de conhecer.' },
+
+    { tipo: 'foto', src: 'assets/galeria/11-familia.jpeg',
+      titulo: 'Comemorando',
+      comentario: 'Notícia boa é assim: chega em casa e vira flor, cesta e abraço.' },
   ],
 
   // ── Trilha sonora (opcional) ──────────────────────────────
@@ -1025,7 +1070,8 @@ function abrirMidia(i) {
   box.innerHTML = `
     ${m.titulo ? `<h3 class="lb-titulo">${m.titulo}</h3>` : ''}
     ${m.tipo === 'video'
-      ? `<video class="lb-midia" src="${m.src}" controls playsinline ${m.poster ? `poster="${m.poster}"` : ''}></video>`
+      ? `<video class="lb-midia" src="${m.src}" controls playsinline muted
+                ${m.poster ? `poster="${m.poster}"` : ''}></video>`
       : `<img class="lb-midia" src="${m.src}" alt="${m.titulo || ''}">`}
     ${m.comentario ? `<p class="lb-comentario">${m.comentario}</p>` : ''}
     <div class="lb-nav">
@@ -1041,6 +1087,16 @@ function abrirMidia(i) {
     });
   });
 
+  const video = box.querySelector('video');
+  if (video) {
+    // começa mudo; se a pessoa ligar o som, a trilha de fundo abaixa
+    video.muted = true;
+    video.addEventListener('volumechange', () => {
+      document.dispatchEvent(new CustomEvent(
+        video.muted ? 'revelacao:fim' : 'revelacao:inicio'));
+    });
+  }
+
   lb.classList.remove('hidden');
   document.body.classList.add('travado');
 }
@@ -1051,6 +1107,7 @@ function initLightbox() {
     lb.classList.add('hidden');
     document.body.classList.remove('travado');
     document.getElementById('lightbox-conteudo').innerHTML = '';
+    document.dispatchEvent(new CustomEvent('revelacao:fim'));
   };
   document.getElementById('lightbox-fechar').addEventListener('click', fechar);
   lb.addEventListener('click', e => { if (e.target === lb) fechar(); });
