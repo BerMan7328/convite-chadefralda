@@ -418,7 +418,11 @@ function pixCopiaECola() {
   const { chave, nome, cidade } = CONFIG.sorteio.pix;
   if (!chave || !nome || !cidade) return '';
 
-  const txid = 'RIFA' + codigoReserva();
+  // '***' significa "sem identificador". Um txid personalizado é
+  // permitido pela especificação, mas vários bancos recusam o código
+  // estático quando ele não é '***' — e um código recusado é pior do
+  // que perder a identificação automática no extrato.
+  const txid = '***';
   const valorTotal = (MEUS.size || 1) * CONFIG.sorteio.valor;
   const conta = tlv('00', 'br.gov.bcb.pix') + tlv('01', chave);
 
@@ -665,14 +669,18 @@ function mostrarPagamento() {
       <button type="button" class="btn btn-primario btn-largo" id="pag-copia">
         Copiar o PIX
       </button>
-      <p class="pag-dica">É só colar no app do banco — o valor e a identificação já vão junto.</p>
+      <p class="pag-dica">É só colar no app do banco — o valor já vai preenchido.</p>
     ` : `
       <p class="pag-dica">Chave PIX</p>
       <button type="button" class="pag-chave" id="pag-chave">${CONFIG.sorteio.pix.chave || 'a definir'}</button>
-      <p class="pag-dica">Na descrição, escreva <b>RIFA ${codigo}</b>.</p>
+      <p class="pag-dica">Se o app deixar, escreva <b>RIFA ${codigo}</b> na descrição.</p>
     `}
 
-    <p class="pag-codigo">Seu código: <b>${codigo}</b></p>
+    <p class="pag-codigo">
+      Seu código: <b>${codigo}</b><br>
+      <small>Mande junto com o comprovante — é assim que a gente acha
+      a sua reserva.</small>
+    </p>
 
     <a class="btn btn-suave btn-largo" id="pag-wpp" href="#" target="_blank" rel="noopener">
       Enviar comprovante no WhatsApp
@@ -890,13 +898,22 @@ async function revelar(nome, palpite) {
        </div>`);
   if (!pulado) await espera(t(2100));
 
-  // 2 · suspense
+  // 2 · o envelope — só abre quando a pessoa toca
   if (!pulado) {
     põe(`<div class="rev-bloco">
-           <p class="rev-p">Agora só falta uma coisa...</p>
-           <p class="rev-forte">abrir o envelope.</p>
+           <p class="rev-p">Agora só falta uma coisa.</p>
+           <button type="button" class="rev-envelope" id="rev-envelope"
+                   aria-label="Abrir o envelope">
+             <span class="env-corpo">
+               <span class="env-carta"></span>
+               <span class="env-aba"></span>
+               <span class="env-selo">A</span>
+             </span>
+             <span class="env-dica">toque para abrir</span>
+           </button>
          </div>`);
-    await espera(t(2200));
+
+    await esperarToqueNoEnvelope(() => pulado, rapido);
   }
 
   // 3 · o medidor com as fintas
@@ -1284,6 +1301,8 @@ function initAudio() {
 
   botao.addEventListener('click', e => {
     e.stopPropagation();
+    // no toque não existe hover: o clique é que abre o slider
+    bloco.classList.add('aberto');
     mudo = !mudo;
     ls.set(CHAVES.mudo, mudo ? '1' : '0');
     if (mudo) {
@@ -1294,10 +1313,9 @@ function initAudio() {
       tocar();
     }
     pintar();
-    bloco.classList.toggle('aberto', !mudo);
   });
 
-  faixa.addEventListener('input', () => {
+  ['input', 'change'].forEach(ev => faixa.addEventListener(ev, () => {
     volume = Number(faixa.value) / 100;
     ls.set(CHAVES.volume, String(volume));
     if (volume > 0 && mudo) {
@@ -1307,11 +1325,28 @@ function initAudio() {
     }
     audio.volume = mudo ? 0 : volume;
     pintar();
+  }));
+
+  // Abre no hover, mas NÃO fecha enquanto a pessoa está arrastando —
+  // senão o ponteiro sai da caixa no meio do gesto, o slider colapsa
+  // (width 0 / pointer-events none) e o arraste morre.
+  let arrastando = false;
+  bloco.addEventListener('mouseenter', () => bloco.classList.add('aberto'));
+  bloco.addEventListener('mouseleave', () => {
+    if (!arrastando) bloco.classList.remove('aberto');
   });
 
-  // abre o slider ao passar o mouse / tocar no ícone
-  bloco.addEventListener('mouseenter', () => bloco.classList.add('aberto'));
-  bloco.addEventListener('mouseleave', () => bloco.classList.remove('aberto'));
+  faixa.addEventListener('pointerdown', () => { arrastando = true; });
+  document.addEventListener('pointerup', () => {
+    if (!arrastando) return;
+    arrastando = false;
+    if (!bloco.matches(':hover')) bloco.classList.remove('aberto');
+  });
+
+  // fora do ícone e do slider, fecha
+  document.addEventListener('click', e => {
+    if (!bloco.contains(e.target)) bloco.classList.remove('aberto');
+  });
 
   // durante a revelação a trilha abaixa, pra não competir com o momento
   document.addEventListener('revelacao:inicio', () => {

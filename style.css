@@ -439,6 +439,34 @@ ul { list-style: none; }
   margin-top: 0.2rem;
 }
 
+/* atalho pro grupo, logo abaixo do Começar */
+.wpp-capa {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.15rem 0.55rem 0.75rem;
+  border-radius: var(--pill);
+  background: rgba(255,255,255,0.82);
+  border: 1px solid var(--fio-ouro);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--tinta-fraca);
+  transition: transform 0.25s var(--mola), box-shadow 0.25s, color 0.25s, background 0.25s;
+}
+.wpp-capa svg {
+  width: 22px; height: 22px;
+  flex: 0 0 auto;
+  fill: #3fa06a;
+  transition: transform 0.25s var(--mola);
+}
+.wpp-capa:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-sm);
+  color: var(--tinta);
+  background: #fff;
+}
+.wpp-capa:hover svg { transform: scale(1.1); }
+
 /* ══════════════ BOTÕES ══════════════ */
 .btn {
   display: inline-flex;
@@ -1317,19 +1345,17 @@ body.travado .deck { overflow: hidden; }
 .som-botao.mudo .onda  { opacity: 0; }
 
 .som-volume {
-  width: 0;
-  opacity: 0;
-  pointer-events: none;
+  width: 86px;
   appearance: none;
   height: 4px;
   border-radius: var(--pill);
   background: linear-gradient(90deg,
     var(--ouro) var(--preenchido, 35%),
     rgba(68,63,51,0.14) var(--preenchido, 35%));
-  transition: width 0.32s var(--mola), opacity 0.25s;
+  cursor: pointer;
+  touch-action: none;
 }
-.som.aberto { padding-right: 14px; }
-.som.aberto .som-volume { width: 86px; opacity: 1; pointer-events: auto; }
+.som { padding-right: 14px; }
 .som-volume::-webkit-slider-thumb {
   appearance: none;
   width: 14px; height: 14px;
@@ -1377,7 +1403,7 @@ body.travado .deck { overflow: hidden; }
   .rail { right: 6px; }
   .cartela { grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 5px; padding: 0.6rem; }
   .num { font-size: 0.7rem; border-radius: 7px; }
-  .som.aberto .som-volume { width: 64px; }
+  .som-volume { width: 62px; }
   .guirlanda { width: 130px; }
 }
 
@@ -1388,4 +1414,106 @@ body.travado .deck { overflow: hidden; }
   .deck { scroll-behavior: auto; }
   .balao { display: none; }
   .papel { animation-duration: 1s; }
+}
+
+
+/* ══════════════ ENVELOPE DA REVELAÇÃO ══════════════ */
+.rev-envelope {
+  display: block;
+  margin: 1.6rem auto 0.4rem;
+  width: min(230px, 62vw);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.env-corpo {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  perspective: 700px;
+}
+
+/* corpo do envelope */
+.env-corpo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: linear-gradient(165deg, #f7efe0, #e6d8c0);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.32), inset 0 0 0 1px rgba(201,169,97,0.6);
+  z-index: 3;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, 50% 58%, 100% 0, 100% 100%, 0 100%);
+}
+
+/* a carta, que sobe quando abre */
+.env-carta {
+  position: absolute;
+  left: 8%; right: 8%;
+  top: 12%;
+  height: 76%;
+  border-radius: 4px;
+  background: linear-gradient(170deg, #fffdf8, #f4ecdd);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+  z-index: 2;
+  transform: translateY(0);
+  transition: transform 0.75s var(--mola);
+}
+
+/* aba superior */
+.env-aba {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 58%;
+  z-index: 4;
+  transform-origin: top center;
+  transform: rotateX(0deg);
+  transition: transform 0.7s var(--mola), z-index 0s 0.35s;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: linear-gradient(175deg, #f2e8d6, #dccbaf);
+  box-shadow: inset 0 -1px 0 rgba(201,169,97,0.7);
+}
+
+/* selo de cera */
+.env-selo {
+  position: absolute;
+  top: 46%; left: 50%;
+  width: 40px; height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 32%, #d8607a, #a83550);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  color: #fff2f5;
+  font-family: 'Great Vibes', cursive;
+  font-size: 1.3rem;
+  transition: opacity 0.3s, transform 0.5s var(--mola);
+}
+
+.rev-envelope:hover .env-aba { transform: rotateX(-14deg); }
+
+.rev-envelope.abrindo .env-aba  { transform: rotateX(-172deg); z-index: 1; }
+.rev-envelope.abrindo .env-selo { opacity: 0; transform: scale(0.4); }
+.rev-envelope.abrindo .env-carta { transform: translateY(-34%) scale(1.04); }
+
+.env-dica {
+  display: block;
+  margin-top: 1rem;
+  font-family: 'Great Vibes', cursive;
+  font-size: 1.5rem;
+  color: #fff8e6;
+  animation: pulsaDica 1.9s ease-in-out infinite;
+}
+@keyframes pulsaDica {
+  0%, 100% { opacity: 0.65; transform: translateY(0); }
+  50%      { opacity: 1;    transform: translateY(-4px); }
+}
+.rev-envelope.abrindo .env-dica { opacity: 0; transition: opacity 0.3s; animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .env-dica { animation: none; }
+  .env-aba, .env-carta, .env-selo { transition: none; }
 }
