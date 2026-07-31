@@ -115,8 +115,8 @@ const CONFIG = {
   // Coloque o arquivo em assets/sons/ e escreva o caminho aqui.
   // Com `arquivo: null`, o controle de som some da tela.
   audio: {
-    arquivo: null,          // ex.: 'assets/sons/trilha.mp3'
-    volume:  0.35,          // volume inicial, de 0 a 1
+    arquivo: 'assets/sons/trilha.mp3',
+    volume:  0.3,           // volume inicial, de 0 a 1
   },
 
   // ── Backend (Google Apps Script) — ver SHEETS_SETUP.md ─────

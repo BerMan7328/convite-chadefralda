@@ -80,14 +80,16 @@ webhook e servidor. O fluxo aqui é: reserva entra como `reservado`, você marca
 
 ### Trilha sonora
 
-Coloque o arquivo em `assets/sons/` e aponte em `CONFIG.audio.arquivo`. O
-controle de som (mudo + volume) aparece no canto inferior esquerdo. Com
-`arquivo: null`, ele some da tela. A trilha só começa depois da primeira
-interação — política de autoplay dos navegadores — e abaixa sozinha durante a
-revelação.
+`assets/sons/trilha.mp3`, apontado em `CONFIG.audio.arquivo`. O controle de som
+(mudo + volume) fica no canto inferior esquerdo; com `arquivo: null` ele some.
 
-Use só música que você tenha direito de publicar: o arquivo fica servido
-publicamente no Pages.
+A trilha só começa depois da primeira interação — política de autoplay dos
+navegadores — e abaixa sozinha durante a revelação e quando alguém tira o mudo
+de um vídeo do álbum.
+
+O arquivo foi recodificado de 320 kbps (11 MB) para 96 kbps (3,4 MB): é trilha
+ambiente tocando baixo, então a taxa alta só custava dados de quem abre o
+convite pelo celular.
 
 ### Álbum
 
