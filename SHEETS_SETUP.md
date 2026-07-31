@@ -1,6 +1,6 @@
 # Ligar o convite numa planilha do Google
 
-Uma planilha só, cinco abas. Sem isso o site funciona, mas tudo fica no
+Uma planilha só, quatro abas. Sem isso o site funciona, mas tudo fica no
 `localStorage` do aparelho de quem preencheu — ou seja, você não vê nada.
 Leva ~5 minutos.
 
@@ -8,11 +8,11 @@ Leva ~5 minutos.
 
 | Aba | O que cai lá | Quando |
 |---|---|---|
-| `RSVP` | Lista de confirmados: nome, WhatsApp, quantos, **palpite**, **de qual lado veio**, presente, recado, se entrou no grupo, acertos do quiz, nº da rifa | ao enviar o formulário |
-| `Votos` | Cada voto menino/menina isolado | ao votar no capítulo XI, mesmo sem confirmar presença |
+| `RSVP` | Lista de confirmados: nome, WhatsApp, quantos, **palpite**, **de qual lado veio**, presente, recado, se clicou no grupo e o **número da sorte** | ao enviar o formulário |
+| `Votos` | Cada voto menino/menina isolado | ao votar na seção do palpite, mesmo sem confirmar presença |
 | `Grupo` | Quem clicou pra entrar no grupo do WhatsApp | ao clicar no botão do grupo |
-| `Recados` | Mural de recados | ao enviar no mural (capítulo XVI) |
-| `Rifa` | Interesse nos números da ação entre amigos | ao clicar num número |
+| `Recados` | Mural de recados | ao enviar no mural (seção do álbum) |
+
 
 > **Sobre a coluna "Clicou no grupo":** o site não tem como saber se a pessoa
 > realmente entrou no WhatsApp — só que ela clicou no link. A coluna se chama
@@ -23,8 +23,8 @@ Leva ~5 minutos.
 
 ## 1. Crie a planilha
 
-Nova planilha no Google Sheets, com **cinco abas**:
-`RSVP`, `Votos`, `Grupo`, `Recados`, `Rifa`.
+Nova planilha no Google Sheets, com **quatro abas**:
+`RSVP`, `Votos`, `Grupo` e `Recados`.
 
 ## 2. Extensões → Apps Script
 
@@ -33,12 +33,10 @@ Apague o conteúdo e cole:
 ```js
 const CABECALHOS = {
   RSVP: ['Quando', 'Nome', 'WhatsApp', 'Vai?', 'Quantos', 'Palpite', 'Lado',
-         'Presente', 'Recado', 'Clicou no grupo', 'Pulou a história?',
-         'Acertos no quiz', 'Quais acertou', 'Número da rifa'],
+         'Presente', 'Recado', 'Clicou no grupo', 'Número da sorte'],
   Votos:   ['Quando', 'Palpite'],
   Grupo:   ['Quando', 'Nome', 'Origem'],
   Recados: ['Quando', 'Nome', 'Recado'],
-  Rifa:    ['Quando', 'Número', 'Prêmio', 'Status'],
 };
 
 function aba(nome) {
@@ -62,9 +60,6 @@ function doPost(e) {
   } else if (d.tipo === 'recado') {
     aba('Recados').appendRow([quando, d.nome || '', d.recado || '']);
 
-  } else if (d.tipo === 'rifa-interesse') {
-    aba('Rifa').appendRow([quando, d.numero, d.premio || '', 'interesse']);
-
   } else if (d.tipo === 'revelacao-vista') {
     // opcional: descomente se quiser medir quem chegou até a revelação
     // aba('Votos').appendRow([quando, 'viu a revelação · ' + (d.palpite || '')]);
@@ -74,9 +69,7 @@ function doPost(e) {
       quando,
       d.nome || '', d.whatsapp || '', d.vai || '', d.quantos || '',
       d.palpite || '', d.lado || '', d.presente || '', d.recado || '',
-      d.entrou_no_grupo || '', d.apressado || '',
-      d.acertos_quiz === '' ? '' : Number(d.acertos_quiz),
-      d.tags_acertos_quiz || '', d.rifa_numero || '',
+      d.entrou_no_grupo || '', d.numero_sorte || '',
     ]);
   }
 
@@ -85,15 +78,6 @@ function doPost(e) {
 
 function doGet(e) {
   const tipo = e.parameter.tipo;
-
-  if (tipo === 'rifa-vendidos') {
-    // marque 'pago' na coluna Status conforme os PIX chegarem
-    const vendidos = aba('Rifa').getDataRange().getValues().slice(1)
-      .filter(l => String(l[3]).toLowerCase() === 'pago')
-      .map(l => Number(l[1]))
-      .filter(n => !isNaN(n));
-    return json({ vendidos });
-  }
 
   if (tipo === 'recados') {
     const recados = aba('Recados').getDataRange().getValues().slice(1)
@@ -140,14 +124,14 @@ envia como `text/plain` e o Apps Script faz o parse. Efeito colateral: a respost
 é opaca, então o site não consegue confirmar o status — ele assume sucesso e
 **sempre** guarda um backup no `localStorage`.
 
-**Acertos do quiz vão como número inteiro (0–10), nunca `"9/10"`.**
-O Sheets interpreta `9/10` como data e corrompe a coluna inteira.
-
-**A rifa registra "interesse", não "pago".**
-Quando alguém clica num número, cai uma linha com status `interesse`. Você troca
-para `pago` quando o PIX cair — aí o `doGet` passa a devolver esse número e ele
-some da cartela para todo mundo. Se preferir não depender disso, liste os números
-na mão em `CONFIG.rifa.vendidos`.
+**O número da sorte é sorteado no navegador de quem confirma.**
+Ele é gerado aleatoriamente entre `CONFIG.sorteio.de` e `.ate` (1000–9999 por
+padrão) e fica guardado no aparelho da pessoa, então ela vê sempre o mesmo número
+se voltar ao site. Como não existe servidor coordenando, **dois convidados podem
+tirar o mesmo número** — com ~100 confirmações a chance é de poucos por cento.
+Na hora do sorteio, use a coluna *Número da sorte* da aba `RSVP` como fonte da
+verdade: sorteie entre os números que realmente aparecem lá. Se dois nomes
+tiverem o mesmo, o mais simples é premiar os dois ou desempatar na hora.
 
 **O mural é público.** Qualquer pessoa com o link escreve. O site exibe os
 recados como texto puro (nunca como HTML), então ninguém consegue injetar nada
