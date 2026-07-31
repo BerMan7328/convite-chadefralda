@@ -36,7 +36,7 @@ const CONFIG = {
   // ── Links ─────────────────────────────────────────────────
   whatsappGrupo:  'https://chat.whatsapp.com/JQxmM7Y5TO29ZbTUDhOxM0?s=cl&p=i&ilr=4&amv=0',
   qrGrupo:        'assets/qr-grupo.png',  // some sozinho se o arquivo não existir
-  whatsappNumero: '',             // só dígitos, ex.: '5531999999999'
+  whatsappNumero: '5531982985951',   // 55 + DDD + número, só dígitos
 
   // ── Rifa solidária ────────────────────────────────────────
   sorteio: {
