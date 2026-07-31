@@ -225,32 +225,62 @@
   </section>
 
 
-  <!-- ═══════════ 7 · A CARTELA ═══════════ -->
-  <section class="slide" data-slide="Ação entre amigos">
+  <!-- ═══════════ 7 · A RIFA ═══════════ -->
+  <section class="slide" data-slide="Rifa entre amigos">
     <div class="wrap wrap-centro">
-      <p class="eyebrow reveal">ação entre amigos</p>
-      <h2 class="titulo reveal" style="--d:.06s">Escolha seu número</h2>
+      <p class="eyebrow reveal">entre amigos</p>
+      <h2 class="titulo reveal" style="--d:.06s">Uma forcinha</h2>
 
-      <div class="premio reveal" style="--d:.12s">
+      <p class="texto texto-centro reveal" style="--d:.1s">
+        Organizamos uma rifa entre amigos pra ajudar a montar o enxoval.
+        Participar é totalmente opcional — sua presença já basta pra gente.
+      </p>
+
+      <div class="premio reveal" style="--d:.14s">
         <span class="tag tag-ambar">o prêmio</span>
         <p class="premio-nome">Kit Jack Daniel's</p>
-        <p class="premio-sub">Garrafa + copo. Sorteado ao vivo no dia da festa.</p>
+        <p class="premio-sub">Garrafa + copo. Sorteado entre todos no dia da festa.</p>
       </div>
 
-      <p class="texto texto-centro reveal" style="--d:.16s">
-        Não precisa pagar nada — é por nossa conta. Escolha um número livre
-        e ele fica reservado junto com a sua confirmação.
+      <p class="nota reveal" style="--d:.18s">
+        Cada número contribui com <strong id="valor-numero">R$ 20</strong>.
+        Se quiser escolher mais de um, fique à vontade — cada número é uma
+        chance a mais e uma ajuda a mais.
       </p>
 
-      <div class="cartela reveal" style="--d:.2s" id="cartela"
+      <div class="cartela reveal" style="--d:.22s" id="cartela"
            role="group" aria-label="Cartela de números"></div>
 
-      <p class="cartela-eco hidden" id="cartela-eco"></p>
-
-      <p class="nota reveal" style="--d:.26s">
-        Os apagados já foram escolhidos. Se você confirmar sem escolher,
-        a gente reserva um livre pra você.
+      <p class="legenda-cartela reveal" style="--d:.26s">
+        <span class="leg leg-livre"></span> livre
+        <span class="leg leg-reservado"></span> reservado
+        <span class="leg leg-pago"></span> já é de alguém
       </p>
+
+      <!-- carrinho + dados de quem escolheu -->
+      <div class="carrinho hidden" id="carrinho">
+        <p class="carrinho-rot">Seus números</p>
+        <div class="carrinho-nums" id="carrinho-nums"></div>
+        <p class="carrinho-conta" id="carrinho-conta"></p>
+
+        <div class="rifa-form" id="rifa-form">
+          <label class="campo">
+            <span class="campo-rot">Seu nome</span>
+            <input type="text" id="rifa-nome" autocomplete="name" placeholder="Como te chamam">
+          </label>
+          <label class="campo">
+            <span class="campo-rot">WhatsApp</span>
+            <input type="tel" id="rifa-whatsapp" inputmode="tel" autocomplete="tel"
+                   placeholder="(31) 9 9999-9999">
+          </label>
+          <button type="button" class="btn btn-primario btn-largo" id="rifa-reservar">
+            Reservar
+          </button>
+          <button type="button" class="btn-limpar" id="rifa-limpar">limpar escolha</button>
+        </div>
+      </div>
+
+      <div class="pagamento hidden" id="rifa-pagamento"></div>
     </div>
   </section>
 
@@ -265,15 +295,6 @@
           Pra gente acertar a feijoada e o chopp, confirme até
           <strong data-cfg="rsvpPrazo">03/10/2026</strong>.
         </p>
-
-        <div class="aviso reveal" style="--d:.16s">
-          <span class="tag tag-ambar">bônus</span>
-          <p>
-            Sua confirmação já reserva o <strong>número da sorte</strong> que você
-            escolheu na cartela — e concorre ao <strong>kit Jack Daniel's</strong>,
-            sorteado ao vivo no dia da festa. Não precisa pagar nada.
-          </p>
-        </div>
 
         <form id="form" class="form reveal" style="--d:.2s" novalidate>
           <label class="campo">
@@ -355,7 +376,6 @@
           Te esperamos <strong data-cfg="dataCurta">10 de outubro</strong>.
         </p>
 
-        <div class="sorte" id="sorte"></div>
         <div class="eco-palpite" id="eco-palpite"></div>
 
         <a class="wpp" data-cfg-href="whatsappGrupo" data-origem="final" href="#" target="_blank" rel="noopener">
@@ -437,6 +457,23 @@
   <button class="lightbox-fechar" id="lightbox-fechar" aria-label="Fechar">×</button>
   <div class="lightbox-conteudo" id="lightbox-conteudo"></div>
 </div>
+
+<!-- controle de som (some sozinho se CONFIG.audio.arquivo for null) -->
+<div class="som hidden" id="som">
+  <button type="button" class="som-botao" id="som-botao" aria-pressed="false" aria-label="Ativar som">
+    <svg class="ico-som" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 9v6h4l5 4V5L9 9H5z" fill="currentColor"/>
+      <path class="onda" d="M16.5 8.5a5 5 0 010 7M19 6a8 8 0 010 12"
+            stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round"/>
+      <path class="corte" d="M17 9l5 6M22 9l-5 6"
+            stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <input type="range" class="som-volume" id="som-volume" min="0" max="100" value="35"
+         aria-label="Volume">
+</div>
+
+<audio id="trilha" preload="none"></audio>
 
 <div id="confete" class="confete" aria-hidden="true"></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>

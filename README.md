@@ -5,7 +5,7 @@ sem dependência) publicado no GitHub Pages.
 
 ## Como o convite funciona
 
-São **8 seções** em rolagem vertical com *scroll-snap*, cada uma ocupando a tela
+São **9 seções** em rolagem vertical com *scroll-snap*, cada uma ocupando a tela
 inteira, com trilho de progresso na lateral e animação de entrada por seção:
 
 1. **Capa** — "Falta pouco", a data e a contagem regressiva
@@ -14,8 +14,9 @@ inteira, com trilho de progresso na lateral e animação de entrada por seção:
 4. **A festa** — data, local, cardápio e botões de agenda/mapa
 5. **O enxoval** — prioridade (fraldas P e M) e "se for do coração"
 6. **O palpite** — Time Azul × Time Rosa
-7. **Confirmação** — o formulário
-8. **O álbum** — mural de fotos e livro de recados (travado)
+7. **Rifa entre amigos** — cartela de 100 números e PIX
+8. **Confirmação** — o formulário
+9. **O álbum** — mural de fotos e livro de recados (travado)
 
 É um chá de fralda: todo mundo sabe. Mas o convite propõe uma brincadeira — o
 convidado chuta menino ou menina e confirma presença. **Só então** roda a
@@ -46,6 +47,7 @@ const CONFIG = {
   mapsUrl:  '',                     // ← PENDENTE
   whatsappNumero: '',               // ← PENDENTE (só dígitos: 5531999999999)
   sheetsEndpoint: '',               // ← PENDENTE, ver SHEETS_SETUP.md
+  sorteio: { pix: { chave: '', nome: '', cidade: '' } },  // ← PENDENTE
 };
 ```
 
@@ -59,15 +61,33 @@ Salve o print do QR como **`assets/qr-grupo.png`**. Ele aparece embaixo do botã
 do WhatsApp, depois da confirmação. Se o arquivo não existir, o bloco some
 sozinho — nada quebra.
 
-### Ação entre amigos
+### Rifa entre amigos
 
-Não tem cartela de números. **Quem confirma presença ganha um número da sorte**,
-gerado na hora e mostrado na tela de confirmação, junto do prêmio
-(kit Jack Daniel's). Ninguém paga nada. Configurado em `CONFIG.sorteio`.
+Cartela de 100 números, seção própria. A pessoa escolhe **quantos quiser**, a
+contribuição é calculada (`nº × CONFIG.sorteio.valor`) e a reserva vai pra
+planilha com um código curto de 4 letras.
 
-O número é sorteado no navegador de quem confirma, então dois convidados podem
-tirar o mesmo. Na hora do sorteio, use a coluna *Número da sorte* da planilha
-como fonte da verdade — detalhes em `SHEETS_SETUP.md`.
+O site gera o **PIX copia e cola** (BR Code do Bacen, montado em `pixCopiaECola()`)
+já com o valor total e o identificador `RIFA` + código — que aparece no seu
+extrato, permitindo casar cada PIX com a linha da planilha.
+
+Preencha `CONFIG.sorteio.pix` com chave, nome do titular e cidade. Sem os três,
+o copia e cola não é gerado e o site mostra só a chave.
+
+⚠️ **Nenhum site estático confirma PIX sozinho** — isso exige um provedor com
+webhook e servidor. O fluxo aqui é: reserva entra como `reservado`, você marca
+`pago` na planilha quando o dinheiro cair, e o número muda de amarelo pra cinza.
+
+### Trilha sonora
+
+Coloque o arquivo em `assets/sons/` e aponte em `CONFIG.audio.arquivo`. O
+controle de som (mudo + volume) aparece no canto inferior esquerdo. Com
+`arquivo: null`, ele some da tela. A trilha só começa depois da primeira
+interação — política de autoplay dos navegadores — e abaixa sozinha durante a
+revelação.
+
+Use só música que você tenha direito de publicar: o arquivo fica servido
+publicamente no Pages.
 
 ### Álbum
 

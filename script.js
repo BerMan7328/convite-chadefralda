@@ -38,15 +38,22 @@ const CONFIG = {
   qrGrupo:        'assets/qr-grupo.png',  // some sozinho se o arquivo não existir
   whatsappNumero: '',             // só dígitos, ex.: '5531999999999'
 
-  // ── Ação entre amigos ─────────────────────────────────────
-  // Cartela de números: o convidado escolhe o dele, e o número
-  // viaja junto com a confirmação de presença.
+  // ── Rifa solidária ────────────────────────────────────────
   sorteio: {
     ativo:  true,
     premio: "Kit Jack Daniel's (garrafa + copo)",
-    total:  100,      // quantos números tem a cartela
-    // números já ocupados. O site também tenta ler os que já foram
-    // usados na planilha; esta lista é o complemento manual.
+    total:  100,        // números na cartela
+    valor:  20,         // R$ por número
+
+    // ⚠️ PENDENTE — dados do PIX. Os três primeiros são obrigatórios
+    // para gerar o "copia e cola"; sem eles só a chave é exibida.
+    pix: {
+      chave:  '',       // CPF, telefone, e-mail ou chave aleatória
+      nome:   '',       // nome do titular, como está no banco (máx. 25)
+      cidade: '',       // cidade do titular (máx. 15), ex.: 'BELO HORIZONTE'
+    },
+
+    // números já ocupados na mão. O site também lê os da planilha.
     ocupados: [],
   },
 
@@ -58,6 +65,14 @@ const CONFIG = {
     // { tipo: 'video', src: 'assets/galeria/chute.mp4', poster: 'assets/galeria/capa.jpeg',
     //   titulo: 'O primeiro chute', comentario: 'Som ligado. Vale a pena.' },
   ],
+
+  // ── Trilha sonora (opcional) ──────────────────────────────
+  // Coloque o arquivo em assets/sons/ e escreva o caminho aqui.
+  // Com `arquivo: null`, o controle de som some da tela.
+  audio: {
+    arquivo: null,          // ex.: 'assets/sons/trilha.mp3'
+    volume:  0.35,          // volume inicial, de 0 a 1
+  },
 
   // ── Backend (Google Apps Script) — ver SHEETS_SETUP.md ─────
   sheetsEndpoint: '',
@@ -106,6 +121,9 @@ function buildWazeUrl() {
 }
 
 function applyConfig() {
+  const vn = document.getElementById('valor-numero');
+  if (vn) vn.textContent = `R$ ${CONFIG.sorteio.valor}`;
+
   const fonte = { ...CONFIG, ...DERIVADO };
   document.querySelectorAll('[data-cfg]').forEach(el => {
     const v = fonte[el.dataset.cfg];
@@ -150,15 +168,17 @@ function applyConfig() {
 const STATE = {
   palpite: null,
   nome: '',
-  numeroSorte: null,
   revelado: false,
+  codigoRifa: null,
+  rifaReservada: null,
 };
 
 const CHAVES = {
   palpite:  'cdf-palpite',
   revelado: 'cdf-revelado',
-  numero:   'cdf-numero',
   grupo:    'cdf-grupo',
+  volume:   'cdf-volume',
+  mudo:     'cdf-mudo',
   rsvp:     'cdf-rsvp',
 };
 
@@ -315,10 +335,88 @@ function mascaraTelefone(bruto) {
   return `(${d.slice(0,2)}) ${d.slice(2,3)} ${d.slice(3,7)}-${d.slice(7)}`;
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   PIX COPIA E COLA — BR Code (padrão EMV do Banco Central)
+
+   Monta a string que a pessoa cola no app do banco. Cada número da
+   rifa vira um identificador próprio (RIFA042), que aparece no
+   extrato — é assim que você sabe de quem é cada pagamento.
+══════════════════════════════════════════════════════════════ */
+function tlv(id, valor) {
+  return id + String(valor.length).padStart(2, '0') + valor;
+}
+
+/* CRC16-CCITT (polinômio 0x1021, inicial 0xFFFF) — exigido pelo padrão */
+function crc16(texto) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < texto.length; i++) {
+    crc ^= texto.charCodeAt(i) << 8;
+    for (let b = 0; b < 8; b++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+/* o padrão só aceita ASCII maiúsculo em nome e cidade */
+function limpar(txt, max) {
+  return (txt || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9 ]/g, '')
+    .toUpperCase().trim().slice(0, max);
+}
+
+function pixCopiaECola() {
+  const { chave, nome, cidade } = CONFIG.sorteio.pix;
+  if (!chave || !nome || !cidade) return '';
+
+  const txid = 'RIFA' + codigoReserva();
+  const valorTotal = (MEUS.size || 1) * CONFIG.sorteio.valor;
+  const conta = tlv('00', 'br.gov.bcb.pix') + tlv('01', chave);
+
+  let carga =
+    tlv('00', '01') +
+    tlv('26', conta) +
+    tlv('52', '0000') +
+    tlv('53', '986') +
+    tlv('54', valorTotal.toFixed(2)) +
+    tlv('58', 'BR') +
+    tlv('59', limpar(nome, 25)) +
+    tlv('60', limpar(cidade, 15)) +
+    tlv('62', tlv('05', txid));
+
+  carga += '6304';
+  return carga + crc16(carga);
+}
+
+async function copiar(texto, msgOk) {
+  try {
+    await navigator.clipboard.writeText(texto);
+    toast(msgOk);
+    return true;
+  } catch (err) {
+    // navegador sem clipboard API ou página fora de https
+    const ta = document.createElement('textarea');
+    ta.value = texto;
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    toast(ok ? msgOk : 'Não consegui copiar. Selecione e copie na mão.');
+    return ok;
+  }
+}
+
 /* ══════════════════════════════════════════════════════════════
    CARTELA — a tela dos 100 números
 ══════════════════════════════════════════════════════════════ */
-const OCUPADOS = new Set();
+/* Números que não estão mais livres: n -> 'reservado' | 'pago' */
+const STATUS_NUM = new Map();
+/* Os números que ESTA pessoa escolheu agora */
+const MEUS = new Set();
 
 function initCartela() {
   const grade = document.getElementById('cartela');
@@ -330,7 +428,7 @@ function initCartela() {
     return;
   }
 
-  (CONFIG.sorteio.ocupados || []).forEach(n => OCUPADOS.add(Number(n)));
+  (CONFIG.sorteio.ocupados || []).forEach(n => STATUS_NUM.set(Number(n), 'pago'));
 
   const frag = document.createDocumentFragment();
   for (let n = 1; n <= CONFIG.sorteio.total; n++) {
@@ -345,96 +443,240 @@ function initCartela() {
 
   grade.addEventListener('click', e => {
     const b = e.target.closest('.num');
-    if (b && !b.disabled) escolherNumero(Number(b.dataset.n));
+    if (b && !b.disabled) alternarNumero(Number(b.dataset.n));
   });
 
-  // Enquanto não soubermos quais números já foram tomados, a cartela fica
-  // travada. Sem isso, alguém escolheria um número que já era de outra
-  // pessoa só porque a resposta da planilha ainda não tinha chegado.
-  if (CONFIG.sheetsEndpoint) {
-    grade.classList.add('verificando');
-    const aviso = document.getElementById('cartela-eco');
-    if (aviso) {
-      aviso.textContent = 'Conferindo quais números ainda estão livres...';
-      aviso.classList.remove('hidden');
-    }
+  // Enquanto não soubermos o que já foi levado, ninguém clica. Sem isso
+  // alguém escolheria um número de outra pessoa só porque a resposta da
+  // planilha ainda não tinha chegado.
+  if (CONFIG.sheetsEndpoint) grade.classList.add('verificando');
+
+  pintarCartela();
+
+  buscarNumerosOcupados().finally(() => {
+    grade.classList.remove('verificando');
+    pintarCartela();
+  });
+
+  const tel = document.getElementById('rifa-whatsapp');
+  if (tel) {
+    const aplica = () => {
+      const f = mascaraTelefone(tel.value);
+      if (f !== tel.value) tel.value = f;
+    };
+    tel.addEventListener('input', aplica);
+    tel.addEventListener('blur', aplica);
   }
 
-  pintarOcupados();
+  const btnReservar = document.getElementById('rifa-reservar');
+  if (btnReservar) btnReservar.addEventListener('click', reservar);
 
-  buscarNumerosUsados().finally(() => {
-    grade.classList.remove('verificando');
-    const aviso = document.getElementById('cartela-eco');
-    if (aviso && !STATE.numeroSorte) aviso.classList.add('hidden');
-
-    // só agora vale recuperar a escolha de uma visita anterior:
-    // ela pode ter sido tomada por outra pessoa nesse meio-tempo
-    const salvo = parseInt(ls.get(CHAVES.numero) || '', 10);
-    if (salvo && !OCUPADOS.has(salvo)) {
-      escolherNumero(salvo, true);
-    } else if (salvo) {
-      ls.set(CHAVES.numero, '');
-      toast(`O número ${pad2(salvo)} foi escolhido por outra pessoa. Pega outro!`);
-    }
+  const btnLimpar = document.getElementById('rifa-limpar');
+  if (btnLimpar) btnLimpar.addEventListener('click', () => {
+    MEUS.clear();
+    pintarCartela();
+    atualizarCarrinho();
   });
 }
 
-function pintarOcupados() {
+function pintarCartela() {
   const travada = document.getElementById('cartela')?.classList.contains('verificando');
   document.querySelectorAll('.num').forEach(b => {
     const n = Number(b.dataset.n);
-    const ocupado = OCUPADOS.has(n) && n !== STATE.numeroSorte;
-    b.classList.toggle('ocupado', ocupado);
-    b.disabled = ocupado || travada;
-    b.title = ocupado ? 'Número já escolhido' : '';
+    const status = STATUS_NUM.get(n);
+    const meu = MEUS.has(n);
+
+    b.classList.toggle('meu', meu);
+    b.classList.toggle('pago', status === 'pago' && !meu);
+    b.classList.toggle('reservado', status === 'reservado' && !meu);
+    b.disabled = travada || (!!status && !meu);
+    b.title = status === 'pago' ? 'Número já pago'
+            : status === 'reservado' ? 'Número reservado, aguardando pagamento'
+            : '';
   });
 }
 
-function escolherNumero(n, silencioso) {
-  if (OCUPADOS.has(n) && n !== STATE.numeroSorte) return;
-
-  STATE.numeroSorte = n;
-  ls.set(CHAVES.numero, String(n));
-
-  document.querySelectorAll('.num').forEach(b =>
-    b.classList.toggle('meu', Number(b.dataset.n) === n));
-
-  const eco = document.getElementById('cartela-eco');
-  if (eco) {
-    eco.innerHTML = `Seu número é o <b>${pad2(n)}</b>. Ele vai junto com a sua confirmação.`;
-    eco.classList.remove('hidden');
-  }
-
-  if (!silencioso) {
-    toast(`Número ${pad2(n)} é seu! 🎟️`);
-    confete('duo', 16);
-  }
+function alternarNumero(n) {
+  MEUS.has(n) ? MEUS.delete(n) : MEUS.add(n);
+  pintarCartela();
+  atualizarCarrinho();
 }
 
-/* Se ninguém escolheu, o site pega um número livre na confirmação */
-function numeroLivreAleatorio() {
-  const livres = [];
-  for (let n = 1; n <= CONFIG.sorteio.total; n++) {
-    if (!OCUPADOS.has(n)) livres.push(n);
-  }
-  if (!livres.length) return null;
-  return livres[Math.floor(Math.random() * livres.length)];
+function numerosOrdenados() {
+  return [...MEUS].sort((a, b) => a - b);
 }
 
-/* Lê da planilha os números já usados por outras confirmações */
-async function buscarNumerosUsados() {
+function totalCarrinho() {
+  return MEUS.size * CONFIG.sorteio.valor;
+}
+
+function atualizarCarrinho() {
+  const box = document.getElementById('carrinho');
+  if (!box) return;
+
+  if (!MEUS.size) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+
+  const nums = numerosOrdenados();
+  const chips = document.getElementById('carrinho-nums');
+  if (chips) {
+    chips.innerHTML = nums
+      .map(n => `<button type="button" class="chip-num" data-tira="${n}"
+                   aria-label="Tirar o número ${pad2(n)}">${pad2(n)} <i>×</i></button>`)
+      .join('');
+    chips.querySelectorAll('[data-tira]').forEach(b =>
+      b.addEventListener('click', () => alternarNumero(Number(b.dataset.tira))));
+  }
+
+  const conta = document.getElementById('carrinho-conta');
+  if (conta) {
+    conta.innerHTML = `${MEUS.size} ${MEUS.size === 1 ? 'número' : 'números'}
+      · contribuição de <b>R$ ${totalCarrinho()}</b>`;
+  }
+
+  const btn = document.getElementById('rifa-reservar');
+  if (btn) btn.textContent = `Reservar ${MEUS.size} ${MEUS.size === 1 ? 'número' : 'números'}`;
+}
+
+/* Código curto que agrupa a reserva e aparece no seu extrato do PIX */
+function codigoReserva() {
+  if (!STATE.codigoRifa) {
+    const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let c = '';
+    for (let i = 0; i < 4; i++) c += letras[Math.floor(Math.random() * letras.length)];
+    STATE.codigoRifa = c;
+  }
+  return STATE.codigoRifa;
+}
+
+async function reservar() {
+  const nome = (document.getElementById('rifa-nome')?.value || '').trim();
+  const tel  = (document.getElementById('rifa-whatsapp')?.value || '').trim();
+
+  if (!MEUS.size)    { toast('Escolha pelo menos um número.'); return; }
+  if (!nome || !tel) { toast('Preencha seu nome e WhatsApp.'); return; }
+
+  const btn = document.getElementById('rifa-reservar');
+  const txt = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Reservando...';
+
+  // reconfere: algum número pode ter sido levado enquanto a pessoa escolhia
+  await buscarNumerosOcupados();
+  const perdidos = numerosOrdenados().filter(n => STATUS_NUM.has(n));
+  perdidos.forEach(n => MEUS.delete(n));
+
+  if (perdidos.length) {
+    pintarCartela();
+    atualizarCarrinho();
+    btn.disabled = false;
+    btn.textContent = txt;
+    toast(`Levaram o ${perdidos.map(pad2).join(', ')}. Confere os que sobraram.`, 4500);
+    return;
+  }
+
+  const nums = numerosOrdenados();
+  const codigo = codigoReserva();
+
+  await enviar({
+    tipo: 'rifa',
+    nome, whatsapp: tel,
+    numeros: nums.join(', '),
+    quantidade: nums.length,
+    total: totalCarrinho(),
+    codigo,
+    status: 'reservado',
+  });
+
+  nums.forEach(n => STATUS_NUM.set(n, 'reservado'));
+  STATE.rifaReservada = { nums, nome, tel, codigo };
+
+  btn.disabled = false;
+  btn.textContent = txt;
+  mostrarPagamento();
+}
+
+function mostrarPagamento() {
+  const { nums, codigo } = STATE.rifaReservada;
+  const painel = document.getElementById('rifa-pagamento');
+  const form = document.getElementById('rifa-form');
+  if (!painel) return;
+
+  if (form) form.classList.add('hidden');
+  document.getElementById('carrinho')?.classList.add('hidden');
+  painel.classList.remove('hidden');
+
+  const codigoPix = pixCopiaECola();
+  const temCopiaCola = !!codigoPix;
+
+  painel.innerHTML = `
+    <p class="pag-titulo">Obrigado de coração 💛</p>
+    <p class="pag-nums">Seus números: <b>${nums.map(pad2).join(' · ')}</b></p>
+    <p class="pag-total">Contribuição: <b>R$ ${nums.length * CONFIG.sorteio.valor}</b></p>
+
+    ${temCopiaCola ? `
+      <button type="button" class="btn btn-primario btn-largo" id="pag-copia">
+        Copiar o PIX
+      </button>
+      <p class="pag-dica">É só colar no app do banco — o valor e a identificação já vão junto.</p>
+    ` : `
+      <p class="pag-dica">Chave PIX</p>
+      <button type="button" class="pag-chave" id="pag-chave">${CONFIG.sorteio.pix.chave || 'a definir'}</button>
+      <p class="pag-dica">Na descrição, escreva <b>RIFA ${codigo}</b>.</p>
+    `}
+
+    <p class="pag-codigo">Seu código: <b>${codigo}</b></p>
+
+    <a class="btn btn-suave btn-largo" id="pag-wpp" href="#" target="_blank" rel="noopener">
+      Enviar comprovante no WhatsApp
+    </a>
+    <p class="pag-nota">
+      Seus números já ficam guardados no seu nome. Quando der, é só mandar
+      o comprovante — e obrigado mesmo por essa força. 💗
+    </p>`;
+
+  const copia = document.getElementById('pag-copia');
+  if (copia) copia.addEventListener('click', () =>
+    copiar(codigoPix, 'PIX copiado! Cole no app do banco.'));
+
+  const chave = document.getElementById('pag-chave');
+  if (chave) chave.addEventListener('click', () =>
+    copiar(CONFIG.sorteio.pix.chave, 'Chave PIX copiada!'));
+
+  const wpp = document.getElementById('pag-wpp');
+  if (wpp) {
+    const msg = [
+      `🎟️ *Rifa solidária — código ${codigo}*`, '',
+      `*Nome:* ${STATE.rifaReservada.nome}`,
+      `*Números:* ${nums.map(pad2).join(', ')}`,
+      `*Contribuição:* R$ ${nums.length * CONFIG.sorteio.valor}`,
+      '', 'Segue o comprovante 👇',
+    ].join('\n');
+    const base = CONFIG.whatsappNumero ? `https://wa.me/${CONFIG.whatsappNumero}` : 'https://wa.me/';
+    wpp.href = `${base}?text=${encodeURIComponent(msg)}`;
+  }
+
+  confete('duo', 40);
+  painel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+/* Lê da planilha os números reservados e pagos */
+async function buscarNumerosOcupados() {
   if (!CONFIG.sheetsEndpoint) return;
   try {
-    const res = await fetch(`${CONFIG.sheetsEndpoint}?tipo=numeros-usados`);
+    const res = await fetch(`${CONFIG.sheetsEndpoint}?tipo=rifa-ocupados`);
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const { usados } = await res.json();
-    if (!Array.isArray(usados)) return;
-    usados.map(Number).filter(n => !isNaN(n)).forEach(n => OCUPADOS.add(n));
-    pintarOcupados();
+    const { ocupados } = await res.json();
+    if (!Array.isArray(ocupados)) return;
+    ocupados.forEach(o => {
+      const n = Number(o.numero);
+      if (!isNaN(n)) STATUS_NUM.set(n, o.status === 'pago' ? 'pago' : 'reservado');
+    });
+    pintarCartela();
   } catch (err) {
-    // a cartela destrava mesmo assim: melhor deixar escolher às cegas
-    // do que travar todo mundo porque a planilha não respondeu
-    console.info('[cartela] não deu pra ler os números usados da planilha.', err);
+    // a cartela destrava assim mesmo: melhor escolher às cegas do que
+    // travar todo mundo porque a planilha não respondeu
+    console.info('[rifa] não deu pra ler os números ocupados.', err);
   }
 }
 
@@ -476,29 +718,6 @@ function initFormulario() {
     dados.entrou_no_grupo = dados.grupo ? 'Sim' : 'Não';
     delete dados.grupo;
 
-    if (CONFIG.sorteio.ativo) {
-      // reconfere na planilha: o número pode ter sido tomado enquanto
-      // a pessoa preenchia o formulário
-      await buscarNumerosUsados();
-
-      if (STATE.numeroSorte && OCUPADOS.has(STATE.numeroSorte)) {
-        const antigo = STATE.numeroSorte;
-        STATE.numeroSorte = null;
-        const novo = numeroLivreAleatorio();
-        if (novo) {
-          escolherNumero(novo, true);
-          toast(`O ${pad2(antigo)} foi levado. Seu número agora é o ${pad2(novo)}.`, 4200);
-        }
-      }
-
-      // não escolheu na cartela? o site reserva um livre
-      if (!STATE.numeroSorte) {
-        const n = numeroLivreAleatorio();
-        if (n) escolherNumero(n, true);
-      }
-      dados.numero_sorte = STATE.numeroSorte || '';
-    }
-
     STATE.nome = dados.nome || '';
     STATE.palpite = dados.palpite || STATE.palpite;
 
@@ -531,16 +750,6 @@ function mostrarConfirmado(dados, ok) {
   document.getElementById('form-area').classList.add('hidden');
   document.getElementById('confirmado').classList.remove('hidden');
 
-  const sorte = document.getElementById('sorte');
-  if (sorte && CONFIG.sorteio.ativo && STATE.numeroSorte) {
-    sorte.innerHTML = `
-      <span class="sorte-rot">seu número da sorte</span>
-      <span class="sorte-num">${pad2(STATE.numeroSorte)}</span>
-      <span class="sorte-sub">Concorre ao ${CONFIG.sorteio.premio}, sorteado ao vivo no dia da festa.</span>`;
-  } else if (sorte) {
-    sorte.classList.add('hidden');
-  }
-
   const eco = document.getElementById('eco-palpite');
   if (eco && dados.palpite) {
     const azul = dados.palpite === 'Menino';
@@ -563,7 +772,6 @@ function mostrarConfirmado(dados, ok) {
         `*Palpite:* ${dados.palpite || '-'}`,
         `*Lado:* ${dados.lado || '-'}`,
       ];
-      if (STATE.numeroSorte) linhas.push(`*Número da sorte:* ${STATE.numeroSorte}`);
       if (dados.recado) linhas.push('', `*Recado:* ${dados.recado}`);
       const base = CONFIG.whatsappNumero ? `https://wa.me/${CONFIG.whatsappNumero}` : 'https://wa.me/';
       link.href = `${base}?text=${encodeURIComponent(linhas.join('\n'))}`;
@@ -618,6 +826,7 @@ async function revelar(nome, palpite) {
   ov.classList.remove('hidden');
   requestAnimationFrame(() => ov.classList.add('aberta'));
   document.body.classList.add('travado');
+  document.dispatchEvent(new CustomEvent('revelacao:inicio'));
 
   const menina = R.sexo === 'Menina';
   const cor = menina ? 'rosa' : 'azul';
@@ -740,6 +949,7 @@ async function revelar(nome, palpite) {
   const fechar = () => {
     ov.classList.remove('aberta');
     document.body.classList.remove('travado');
+    document.dispatchEvent(new CustomEvent('revelacao:fim'));
     setTimeout(() => ov.classList.add('hidden'), 500);
   };
   document.getElementById('rev-voltar').addEventListener('click', fechar);
@@ -962,6 +1172,99 @@ function baixarIcs() {
   URL.revokeObjectURL(url);
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   TRILHA SONORA
+
+   Navegador nenhum deixa tocar áudio antes de a pessoa interagir
+   com a página, então a trilha só começa no primeiro clique/toque.
+══════════════════════════════════════════════════════════════ */
+function initAudio() {
+  const bloco = document.getElementById('som');
+  if (!bloco) return;
+
+  if (!CONFIG.audio || !CONFIG.audio.arquivo) { bloco.remove(); return; }
+
+  const audio = document.getElementById('trilha');
+  const botao = document.getElementById('som-botao');
+  const faixa = document.getElementById('som-volume');
+
+  audio.src = CONFIG.audio.arquivo;
+  audio.loop = true;
+
+  // se o arquivo não existir, o controle some em vez de ficar quebrado
+  audio.addEventListener('error', () => bloco.remove());
+
+  const volSalvo = parseFloat(ls.get(CHAVES.volume) ?? '');
+  const mudoSalvo = ls.get(CHAVES.mudo) === '1';
+
+  let volume = isNaN(volSalvo) ? CONFIG.audio.volume : volSalvo;
+  let mudo = mudoSalvo;
+
+  audio.volume = mudo ? 0 : volume;
+  faixa.value = String(Math.round(volume * 100));
+  bloco.classList.remove('hidden');
+
+  function pintar() {
+    botao.classList.toggle('mudo', mudo || volume === 0);
+    botao.setAttribute('aria-pressed', String(!mudo));
+    botao.setAttribute('aria-label', mudo ? 'Ativar som' : 'Desativar som');
+    faixa.style.setProperty('--preenchido', (volume * 100) + '%');
+  }
+
+  function tocar() {
+    if (mudo) return;
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => { /* ainda bloqueado: espera outro toque */ });
+  }
+
+  // primeira interação destrava o autoplay
+  const destravar = () => tocar();
+  ['click', 'touchstart', 'keydown'].forEach(ev =>
+    document.addEventListener(ev, destravar, { once: true, passive: true }));
+
+  botao.addEventListener('click', e => {
+    e.stopPropagation();
+    mudo = !mudo;
+    ls.set(CHAVES.mudo, mudo ? '1' : '0');
+    if (mudo) {
+      audio.pause();
+    } else {
+      if (volume === 0) { volume = 0.35; faixa.value = '35'; }
+      audio.volume = volume;
+      tocar();
+    }
+    pintar();
+    bloco.classList.toggle('aberto', !mudo);
+  });
+
+  faixa.addEventListener('input', () => {
+    volume = Number(faixa.value) / 100;
+    ls.set(CHAVES.volume, String(volume));
+    if (volume > 0 && mudo) {
+      mudo = false;
+      ls.set(CHAVES.mudo, '0');
+      tocar();
+    }
+    audio.volume = mudo ? 0 : volume;
+    pintar();
+  });
+
+  // abre o slider ao passar o mouse / tocar no ícone
+  bloco.addEventListener('mouseenter', () => bloco.classList.add('aberto'));
+  bloco.addEventListener('mouseleave', () => bloco.classList.remove('aberto'));
+
+  // durante a revelação a trilha abaixa, pra não competir com o momento
+  document.addEventListener('revelacao:inicio', () => {
+    if (!mudo) audio.volume = volume * 0.35;
+  });
+  document.addEventListener('revelacao:fim', () => {
+    if (!mudo) audio.volume = volume;
+  });
+
+  pintar();
+}
+
 /* ══════════════════════════════════════════════════════════════
    CONFETE, BALÕES, TOAST
 ══════════════════════════════════════════════════════════════ */
@@ -1032,6 +1335,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initLightbox();
   initRecados();
   initGrupo();
+  initAudio();
 
   const ics = document.getElementById('btn-ics');
   if (ics) ics.addEventListener('click', baixarIcs);
