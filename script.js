@@ -48,9 +48,14 @@ const CONFIG = {
     // ⚠️ PENDENTE — dados do PIX. Os três primeiros são obrigatórios
     // para gerar o "copia e cola"; sem eles só a chave é exibida.
     pix: {
-      // Chave de telefone no BR Code vai com +55 e DDD. Só os dígitos
-      // soltos ('31983790303') fazem parte dos bancos recusar o código.
-      chave:  '+5531983790303',
+      // Escreva a chave do jeito que ela está cadastrada no banco.
+      // O tipo é detectado sozinho e o formato do BR Code é ajustado:
+      //   celular  '31983790303'          -> +5531983790303
+      //   CPF      '12345678909'          -> 12345678909
+      //   CNPJ     '12345678000199'       -> 12345678000199
+      //   e-mail   'nome@email.com'       -> como está
+      //   aleatória (UUID)                -> como está
+      chave:  '31983790303',
       nome:   'Rodrigo Lino Malta',   // como está no banco (máx. 25)
       cidade: 'Belo Horizonte',       // (máx. 15)
     },
@@ -414,8 +419,43 @@ function limpar(txt, max) {
     .toUpperCase().trim().slice(0, max);
 }
 
+/* CPF e celular têm os mesmos 11 dígitos: só os dígitos verificadores
+   distinguem. Sem essa checagem, um CPF viraria '+55' + CPF e o banco
+   devolveria "chave inválida". */
+function cpfValido(c) {
+  if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+  for (const n of [9, 10]) {
+    let soma = 0;
+    for (let i = 0; i < n; i++) soma += Number(c[i]) * (n + 1 - i);
+    let d = (soma * 10) % 11;
+    if (d === 10) d = 0;
+    if (d !== Number(c[n])) return false;
+  }
+  return true;
+}
+
+function normalizarChavePix(bruta) {
+  const chave = (bruta || '').trim();
+  if (!chave) return '';
+
+  if (chave.includes('@')) return chave;                       // e-mail
+  if (chave.startsWith('+')) return chave;                     // já formatada
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(chave)) return chave;  // aleatória (UUID)
+
+  const digitos = chave.replace(/\D/g, '');
+  if (digitos.length === 14) return digitos;                   // CNPJ
+  if (digitos.length === 11) {
+    if (cpfValido(digitos)) return digitos;                    // CPF
+    return '+55' + digitos;                                    // celular
+  }
+  if (digitos.length === 13 && digitos.startsWith('55')) return '+' + digitos;
+
+  return chave;
+}
+
 function pixCopiaECola() {
-  const { chave, nome, cidade } = CONFIG.sorteio.pix;
+  const { nome, cidade } = CONFIG.sorteio.pix;
+  const chave = normalizarChavePix(CONFIG.sorteio.pix.chave);
   if (!chave || !nome || !cidade) return '';
 
   // '***' significa "sem identificador". Um txid personalizado é
