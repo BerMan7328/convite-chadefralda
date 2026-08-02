@@ -797,6 +797,32 @@ a.desativado { opacity: 0.4; cursor: not-allowed; }
 }
 @keyframes brilhaCarregando { to { background-position: -300% 0; } }
 
+/* aviso durante a consulta à planilha — pareado com .cartela.verificando */
+.cartela-espera {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  font-size: 0.82rem;
+  color: var(--tinta-fraca);
+  font-style: italic;
+}
+.cartela-espera::before {
+  content: '';
+  width: 13px; height: 13px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 2px solid var(--fio-ouro);
+  border-top-color: var(--ouro-fundo);
+  animation: giraEspera 0.8s linear infinite;
+}
+@keyframes giraEspera { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cartela-espera::before { animation: none; }
+}
+
 .legenda-cartela {
   display: flex;
   flex-wrap: wrap;

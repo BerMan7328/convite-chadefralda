@@ -545,12 +545,20 @@ function initCartela() {
   // Enquanto não soubermos o que já foi levado, ninguém clica. Sem isso
   // alguém escolheria um número de outra pessoa só porque a resposta da
   // planilha ainda não tinha chegado.
-  if (CONFIG.sheetsEndpoint) grade.classList.add('verificando');
+  const espera = document.getElementById('cartela-espera');
+  if (CONFIG.sheetsEndpoint) {
+    grade.classList.add('verificando');
+    // o esqueleto brilhando não diz o que está havendo, e a consulta ao
+    // Apps Script leva uns 2s (bem mais na primeira do dia). Sem um texto,
+    // quem toca nesse intervalo acha que a cartela travou.
+    espera?.classList.remove('hidden');
+  }
 
   pintarCartela();
 
   buscarNumerosOcupados().finally(() => {
     grade.classList.remove('verificando');
+    espera?.classList.add('hidden');
     pintarCartela();
   });
 
