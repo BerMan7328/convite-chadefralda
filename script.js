@@ -127,7 +127,7 @@ const CONFIG = {
   },
 
   // ── Backend (Google Apps Script) — ver SHEETS_SETUP.md ─────
-  sheetsEndpoint: '',
+  sheetsEndpoint: 'https://script.google.com/macros/s/AKfycbzEgcbhcPaHrqDlv7FfshnRubXRykSE9FyoqIAdPhArxRT02zBmQ2N-1lTvIQj_kyp7/exec',
 };
 
 /* ══════════════════════════════════════════════════════════════
