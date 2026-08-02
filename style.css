@@ -145,6 +145,17 @@ ul { list-style: none; }
   padding: clamp(3.5rem, 9vh, 5rem) 1.25rem clamp(3rem, 8vh, 4rem);
 }
 
+/* No celular, os slides da rifa e do "Confirmar" ficam mais altos que a
+   tela. Com snap obrigatório o navegador precisa repousar num ponto de
+   snap, e o único ponto do slide é o topo dele: quem tentava descer até o
+   botão era puxado de volta ou jogado pro slide seguinte. No toque o snap
+   vira "proximity", que só agarra perto da borda e deixa rolar livre
+   dentro do slide. No desktop o conteúdo cabe, então nada muda. */
+@media (pointer: coarse), (max-width: 820px) {
+  .deck  { scroll-snap-type: y proximity; }
+  .slide { scroll-snap-stop: normal; }
+}
+
 .wrap {
   width: min(600px, 100%);
   display: flex;
