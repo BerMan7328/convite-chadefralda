@@ -901,6 +901,37 @@ async function enviar(dados) {
 const espera = ms => new Promise(r => setTimeout(r, ms));
 const semMovimento = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/* O envelope é a única pausa da revelação que depende da pessoa: a cena
+   só avança quando ela toca. Resolve no toque — ou na hora, se ela
+   apertou "pular" com o envelope na tela, senão a animação ficaria
+   presa esperando um toque que não vem mais. */
+function esperarToqueNoEnvelope(foiPulado, rapido) {
+  return new Promise(resolve => {
+    const env = document.getElementById('rev-envelope');
+    if (!env || foiPulado()) { resolve(); return; }
+
+    let encerrado = false;
+
+    const vigia = setInterval(() => {
+      if (encerrado || !foiPulado()) return;
+      encerrado = true;
+      clearInterval(vigia);
+      resolve();
+    }, 120);
+
+    env.addEventListener('click', async () => {
+      if (encerrado) return;
+      encerrado = true;
+      clearInterval(vigia);
+      env.disabled = true;
+      env.classList.add('abrindo');
+      // deixa a aba virar e a carta subir antes de trocar de cena
+      await espera(rapido ? 380 : 1150);
+      resolve();
+    });
+  });
+}
+
 async function revelar(nome, palpite) {
   const R = CONFIG.revelacao;
   const ov = document.getElementById('revelacao');
