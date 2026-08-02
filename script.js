@@ -511,6 +511,11 @@ async function copiar(texto, msgOk) {
 ══════════════════════════════════════════════════════════════ */
 /* Números que não estão mais livres: n -> 'reservado' | 'pago' */
 const STATUS_NUM = new Map();
+/* Quando a lista de ocupados foi atualizada pela última vez. Serve pra não
+   repetir a consulta de ~2,3s no momento em que a pessoa aperta Reservar. */
+let ULTIMA_CONSULTA = 0;
+const VALIDADE_CONSULTA = 10000;
+
 /* Os números que ESTA pessoa escolheu agora */
 const MEUS = new Set();
 
@@ -608,9 +613,17 @@ function pintarCartela() {
 
 function alternarNumero(n) {
   if (STATE.rifaReservada) return;   // reserva fechada, não se mexe mais
+  const primeiro = MEUS.size === 0;
   MEUS.has(n) ? MEUS.delete(n) : MEUS.add(n);
   pintarCartela();
   atualizarCarrinho();
+
+  /* Atualiza a lista em segundo plano já na primeira escolha: enquanto a
+     pessoa digita nome e WhatsApp, a consulta termina — e o Reservar não
+     precisa mais parar pra esperar. */
+  if (primeiro && Date.now() - ULTIMA_CONSULTA > VALIDADE_CONSULTA) {
+    buscarNumerosOcupados();
+  }
 }
 
 /* A rifa é opcional, mas quem passa por ela já digitou nome e WhatsApp.
@@ -685,8 +698,11 @@ async function reservar() {
   btn.disabled = true;
   btn.textContent = 'Reservando...';
 
-  // reconfere: algum número pode ter sido levado enquanto a pessoa escolhia
-  await buscarNumerosOcupados();
+  // reconfere: algum número pode ter sido levado enquanto a pessoa escolhia.
+  // Se a atualização em segundo plano acabou de rodar, aproveita ela.
+  if (Date.now() - ULTIMA_CONSULTA > VALIDADE_CONSULTA) {
+    await buscarNumerosOcupados();
+  }
   const perdidos = numerosOrdenados().filter(n => STATUS_NUM.has(n));
   perdidos.forEach(n => MEUS.delete(n));
 
@@ -802,6 +818,7 @@ async function buscarNumerosOcupados() {
       const n = Number(o.numero);
       if (!isNaN(n)) STATUS_NUM.set(n, o.status === 'pago' ? 'pago' : 'reservado');
     });
+    ULTIMA_CONSULTA = Date.now();
     pintarCartela();
   } catch (err) {
     // a cartela destrava assim mesmo: melhor escolher às cegas do que
@@ -913,15 +930,37 @@ function mostrarConfirmado(dados, ok) {
 /* ══════════════════════════════════════════════════════════════
    ENVIO PARA A PLANILHA
 ══════════════════════════════════════════════════════════════ */
-async function enviar(dados) {
+/* Não espera a resposta, de propósito.
+
+   O Apps Script leva ~2,3s (muito mais na primeira chamada do dia) e a
+   resposta vem opaca por causa do 'no-cors' — ou seja, esperar nunca disse
+   se deu certo, só deixava a pessoa olhando pra tela parada antes de ver a
+   confirmação. sendBeacon entrega em segundo plano e sobrevive à página
+   sendo fechada, que é justamente o risco de disparar e seguir em frente.
+
+   Continua síncrona no retorno, então quem faz 'await enviar(...)' não
+   quebra: resolve na hora. */
+function enviar(dados) {
   if (!CONFIG.sheetsEndpoint) return false;
+  const corpo = JSON.stringify({ ...dados, ts: new Date().toISOString() });
+
   try {
-    await fetch(CONFIG.sheetsEndpoint, {
+    if (navigator.sendBeacon) {
+      const blob = new Blob([corpo], { type: 'text/plain;charset=utf-8' });
+      if (navigator.sendBeacon(CONFIG.sheetsEndpoint, blob)) return true;
+    }
+  } catch (err) {
+    // sem beacon (ou recusado por tamanho): cai no fetch abaixo
+  }
+
+  try {
+    fetch(CONFIG.sheetsEndpoint, {
       method: 'POST',
       mode: 'no-cors',
+      keepalive: true,
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ ...dados, ts: new Date().toISOString() }),
-    });
+      body: corpo,
+    }).catch(err => console.warn('[sheets] falhou', err));
     // no-cors devolve resposta opaca: não dá pra checar status
     return true;
   } catch (err) {
@@ -1382,6 +1421,17 @@ function initAudio() {
 
   let volume = isNaN(volSalvo) ? CONFIG.audio.volume : volSalvo;
   let mudo = mudoSalvo;
+
+  /* No iOS, audio.volume é somente-leitura: a atribuição é aceita e
+     descartada, porque a Apple reserva o volume aos botões do aparelho.
+     Detecta escrevendo e relendo — mais confiável que farejar user agent.
+     Onde não dá pra mexer, o slider some e fica só o botão de mudo, que
+     funciona via pause/play. Rotear por Web Audio devolveria o controle,
+     mas lá a trilha passa a obedecer a chavinha de silencioso do aparelho
+     e corre o risco de não tocar — pior do que não ter o slider. */
+  audio.volume = 0.5;
+  const podeVolume = Math.abs(audio.volume - 0.5) < 0.01;
+  if (!podeVolume) faixa.classList.add('hidden');
 
   audio.volume = mudo ? 0 : volume;
   faixa.value = String(Math.round(volume * 100));
