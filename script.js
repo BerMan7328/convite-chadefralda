@@ -269,7 +269,12 @@ function initNavegacao() {
       document.querySelectorAll('.rail-item').forEach((r, k) =>
         r.classList.toggle('ativo', k === i));
     });
-  }, { root: deck, threshold: 0.5 });
+    /* Uma faixa fina no meio da tela, em vez de "50% da área do slide".
+       Slides mais altos que a tela nunca alcançam 50% — no celular a rifa
+       e o "Confirmar" ficavam abaixo do limite e nunca recebiam .visivel,
+       então o conteúdo .reveal continuava em opacity 0 e a seção parecia
+       uma página em branco. A faixa funciona em qualquer altura. */
+  }, { root: deck, rootMargin: '-45% 0px -45% 0px', threshold: 0 });
   SLIDES.forEach(s => obs.observe(s));
 
   // botões [data-ir="n"]
