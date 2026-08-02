@@ -585,6 +585,11 @@ function initCartela() {
 
 function pintarCartela() {
   const travada = document.getElementById('cartela')?.classList.contains('verificando');
+  /* Depois de reservar, a escolha está gravada na planilha e o código da
+     reserva já foi entregue: mexer na cartela aqui só criaria divergência
+     entre o que a pessoa vê e o que está registrado. */
+  const jaReservou = !!STATE.rifaReservada;
+
   document.querySelectorAll('.num').forEach(b => {
     const n = Number(b.dataset.n);
     const status = STATUS_NUM.get(n);
@@ -593,17 +598,32 @@ function pintarCartela() {
     b.classList.toggle('meu', meu);
     b.classList.toggle('pago', status === 'pago' && !meu);
     b.classList.toggle('reservado', status === 'reservado' && !meu);
-    b.disabled = travada || (!!status && !meu);
-    b.title = status === 'pago' ? 'Número já pago'
+    b.disabled = travada || jaReservou || (!!status && !meu);
+    b.title = jaReservou && meu ? 'Reserva confirmada'
+            : status === 'pago' ? 'Número já pago'
             : status === 'reservado' ? 'Número reservado, aguardando pagamento'
             : '';
   });
 }
 
 function alternarNumero(n) {
+  if (STATE.rifaReservada) return;   // reserva fechada, não se mexe mais
   MEUS.has(n) ? MEUS.delete(n) : MEUS.add(n);
   pintarCartela();
   atualizarCarrinho();
+}
+
+/* A rifa é opcional, mas quem passa por ela já digitou nome e WhatsApp.
+   Reaproveita no formulário de presença — sem sobrescrever nada que a
+   pessoa já tenha digitado lá por conta própria. */
+function herdarContato(nome, tel) {
+  if (nome) STATE.nome = nome;
+  const form = document.getElementById('form');
+  if (!form) return;
+  const campoNome = form.querySelector('input[name="nome"]');
+  const campoTel  = form.querySelector('input[name="whatsapp"]');
+  if (campoNome && !campoNome.value.trim() && nome) campoNome.value = nome;
+  if (campoTel  && !campoTel.value.trim()  && tel)  campoTel.value  = tel;
 }
 
 function numerosOrdenados() {
@@ -694,6 +714,8 @@ async function reservar() {
 
   nums.forEach(n => STATUS_NUM.set(n, 'reservado'));
   STATE.rifaReservada = { nums, nome, tel, codigo };
+  herdarContato(nome, tel);
+  pintarCartela();   // a partir daqui a cartela fica fechada
 
   btn.disabled = false;
   btn.textContent = txt;
