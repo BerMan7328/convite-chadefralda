@@ -1355,31 +1355,16 @@ body.travado .deck { overflow: hidden; }
 .som-botao.mudo .corte { opacity: 1; }
 .som-botao.mudo .onda  { opacity: 0; }
 
-/* A trilha continua com 4px, mas quem recebe o toque é o input inteiro.
-   Com height: 4px o alvo tinha 4px de altura: dá pra acertar com o mouse,
-   não com o dedo — por isso o volume só falhava no celular. A altura vai
-   pra 28px e o desenho da trilha migra pro pseudo-elemento. */
 .som-volume {
   width: 86px;
   appearance: none;
-  height: 28px;
-  background: transparent;
+  height: 4px;
+  border-radius: var(--pill);
+  background: linear-gradient(90deg,
+    var(--ouro) var(--preenchido, 35%),
+    rgba(68,63,51,0.14) var(--preenchido, 35%));
   cursor: pointer;
   touch-action: none;
-}
-.som-volume::-webkit-slider-runnable-track {
-  height: 4px;
-  border-radius: var(--pill);
-  background: linear-gradient(90deg,
-    var(--ouro) var(--preenchido, 35%),
-    rgba(68,63,51,0.14) var(--preenchido, 35%));
-}
-.som-volume::-moz-range-track {
-  height: 4px;
-  border-radius: var(--pill);
-  background: linear-gradient(90deg,
-    var(--ouro) var(--preenchido, 35%),
-    rgba(68,63,51,0.14) var(--preenchido, 35%));
 }
 .som { padding-right: 14px; }
 .som-volume::-webkit-slider-thumb {
@@ -1389,8 +1374,6 @@ body.travado .deck { overflow: hidden; }
   background: #fff;
   border: 2px solid var(--ouro);
   cursor: pointer;
-  /* recentra o thumb sobre a trilha de 4px */
-  margin-top: -5px;
 }
 .som-volume::-moz-range-thumb {
   width: 14px; height: 14px;
