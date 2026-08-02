@@ -1353,7 +1353,40 @@ function initAudio() {
   let volume = isNaN(volSalvo) ? CONFIG.audio.volume : volSalvo;
   let mudo = mudoSalvo;
 
-  audio.volume = mudo ? 0 : volume;
+  /* No iOS, audio.volume é somente-leitura: o WebKit aceita a atribuição
+     e a ignora, porque a Apple reserva o volume aos botões do aparelho.
+     O slider andava e o som não mudava. A saída é passar a trilha por um
+     GainNode do Web Audio, cujo ganho o iOS respeita. O AudioContext só
+     pode nascer depois de um gesto da pessoa, então isso acontece no
+     primeiro toque; até lá, e onde o Web Audio não existir, seguimos no
+     audio.volume, que funciona no desktop e no Android. */
+  let ganho = null;
+  let atenuacao = 1;   // a revelação abaixa a trilha por um tempo
+
+  function aplicarVolume() {
+    const v = (mudo ? 0 : volume) * atenuacao;
+    if (ganho) ganho.gain.value = v;
+    else audio.volume = v;
+  }
+
+  function ligarGanho() {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (ganho || !Ctx) return;
+    try {
+      const ctx = new Ctx();
+      const fonte = ctx.createMediaElementSource(audio);
+      ganho = ctx.createGain();
+      fonte.connect(ganho);
+      ganho.connect(ctx.destination);
+      audio.volume = 1;               // daqui pra frente quem manda é o ganho
+      if (ctx.state === 'suspended') ctx.resume();
+      aplicarVolume();
+    } catch (err) {
+      ganho = null;                   // sem Web Audio, continua no audio.volume
+    }
+  }
+
+  aplicarVolume();
   faixa.value = String(Math.round(volume * 100));
   bloco.classList.remove('hidden');
 
@@ -1371,7 +1404,7 @@ function initAudio() {
   }
 
   // primeira interação destrava o autoplay
-  const destravar = () => tocar();
+  const destravar = () => { ligarGanho(); tocar(); };
   ['click', 'touchstart', 'keydown'].forEach(ev =>
     document.addEventListener(ev, destravar, { once: true, passive: true }));
 
@@ -1385,7 +1418,7 @@ function initAudio() {
       audio.pause();
     } else {
       if (volume === 0) { volume = 0.35; faixa.value = '35'; }
-      audio.volume = volume;
+      aplicarVolume();
       tocar();
     }
     pintar();
@@ -1399,7 +1432,7 @@ function initAudio() {
       ls.set(CHAVES.mudo, '0');
       tocar();
     }
-    audio.volume = mudo ? 0 : volume;
+    aplicarVolume();
     pintar();
   }));
 
@@ -1426,10 +1459,12 @@ function initAudio() {
 
   // durante a revelação a trilha abaixa, pra não competir com o momento
   document.addEventListener('revelacao:inicio', () => {
-    if (!mudo) audio.volume = volume * 0.35;
+    atenuacao = 0.35;
+    aplicarVolume();
   });
   document.addEventListener('revelacao:fim', () => {
-    if (!mudo) audio.volume = volume;
+    atenuacao = 1;
+    aplicarVolume();
   });
 
   pintar();
