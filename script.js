@@ -55,7 +55,7 @@ const CONFIG = {
       //   CNPJ     '12345678000199'       -> 12345678000199
       //   e-mail   'nome@email.com'       -> como está
       //   aleatória (UUID)                -> como está
-      chave:  '31983790303',
+      chave:  '31983790302',
       nome:   'Rodrigo Lino Malta',   // como está no banco (máx. 25)
       cidade: 'Belo Horizonte',       // (máx. 15)
     },
