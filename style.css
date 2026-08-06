@@ -501,6 +501,46 @@ ul { list-style: none; }
 .btn-primario:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(111,127,92,0.36); }
 .btn-primario:disabled { opacity: 0.6; transform: none; cursor: wait; }
 
+/* O "Começar" é a única coisa que a pessoa precisa fazer na capa. Ele respira
+   devagar e solta um anel, pra ninguém ficar parado achando que acabou ali.
+   A respiração usa `scale` (propriedade própria) em vez de `transform`, senão
+   ela sobrescreveria o translateY do :hover. Para de pulsar ao ser tocado. */
+.btn-pulsa {
+  position: relative;
+  animation: respiraBotao 2.4s ease-in-out infinite;
+}
+/* O anel nasce já fora da borda: em cima dela, verde sobre verde, ele some. */
+.btn-pulsa::before,
+.btn-pulsa::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 2px solid var(--salvia);
+  opacity: 0;
+  pointer-events: none;
+  animation: anelBotao 2.4s ease-out infinite;
+}
+.btn-pulsa::after { animation-delay: 1.2s; }   /* o segundo anel sai no meio do ciclo */
+
+@keyframes respiraBotao { 0%, 100% { scale: 1; } 50% { scale: 1.045; } }
+@keyframes anelBotao {
+  0%   { scale: 1;    opacity: 0.6; }
+  55%  { scale: 1.22; opacity: 0.16; }
+  80%  { scale: 1.34; opacity: 0; }
+  100% { scale: 1.34; opacity: 0; }
+}
+
+.btn-pulsa:hover, .btn-pulsa:focus-visible { animation: none; scale: 1; }
+.btn-pulsa:hover::before, .btn-pulsa:focus-visible::before,
+.btn-pulsa:hover::after,  .btn-pulsa:focus-visible::after { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-pulsa,
+  .btn-pulsa::before,
+  .btn-pulsa::after { animation: none; scale: 1; }
+}
+
 .btn-suave {
   background: rgba(255,255,255,0.85);
   color: var(--tinta);

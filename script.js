@@ -10,7 +10,7 @@
 const CONFIG = {
   // ── Quem ──────────────────────────────────────────────────
   casal:      'Rodrigo & Clara',
-  assinatura: 'Rodrigo, Clara & Maitê',
+  assinatura: 'Rodrigo, Clara, Maitê e …',
 
   // ── A REVELAÇÃO ───────────────────────────────────────────
   // ⚠️ SPOILER. A animação só roda depois que a pessoa envia o
@@ -28,10 +28,10 @@ const CONFIG = {
   dataFim:    { ano: 2026, mes: 10, dia: 10, hora: 23, minuto: 0 },
   rsvpPrazo:  '03/10/2026',
 
-  // ── Onde ──  ⚠️ PENDENTE: preencher antes de divulgar ──────
-  local:    'A definir',
-  endereco: 'Endereço a confirmar',
-  mapsUrl:  '',                   // link curto do Google Maps
+  // ── Onde ─────────────────────────────────────────────────
+  local:    'Quintas do Jacubá · Contagem',
+  endereco: 'Casa 02, Rua A — Quintas do Jacubá, Contagem/MG',
+  mapsUrl:  'https://maps.app.goo.gl/r2GNw8cicquRRaPq7',
 
   // ── Links ─────────────────────────────────────────────────
   whatsappGrupo:  'https://chat.whatsapp.com/JQxmM7Y5TO29ZbTUDhOxM0?s=cl&p=i&ilr=4&amv=0',
@@ -162,7 +162,8 @@ function buildGcalUrl() {
     action: 'TEMPLATE',
     text:   DERIVADO.tituloEvento,
     dates:  `${icsStamp(CONFIG.dataInicio)}/${icsStamp(CONFIG.dataFim)}`,
-    details: 'Feijoada no capricho, petiscos da roça e chopp gelado.',
+    details: 'Feijoada no capricho, petiscos da roça, chopp gelado, suco e refrigerante. '
+           + 'Quem quiser outra bebida alcoólica pode levar a sua.',
     location: localCompleto(),
   });
 }
@@ -1380,7 +1381,8 @@ function baixarIcs() {
     `DTSTART:${icsStamp(CONFIG.dataInicio)}`,
     `DTEND:${icsStamp(CONFIG.dataFim)}`,
     `SUMMARY:${DERIVADO.tituloEvento}`,
-    'DESCRIPTION:Feijoada no capricho, petiscos da roça e chopp gelado.',
+    'DESCRIPTION:Feijoada no capricho\\, petiscos da roça\\, chopp gelado\\, suco e '
+      + 'refrigerante. Quem quiser outra bebida alcoólica pode levar a sua.',
     `LOCATION:${local || 'A definir'}`,
     'STATUS:CONFIRMED', 'END:VEVENT', 'END:VCALENDAR',
   ].join('\r\n');
