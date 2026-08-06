@@ -99,6 +99,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+
+      # O GitHub Pages manda cache de 10 minutos e o navegador do celular
+      # costuma segurar bem mais que isso. Sem trocar a URL do arquivo, quem já
+      # abriu o convite continua com o JS e o CSS velhos. Aqui cada deploy
+      # carimba o hash do commit no ?v=, então a URL muda quando o conteúdo muda
+      # — e só quando muda. O index.html em si nunca é cacheado com versão, e é
+      # ele que aponta para os arquivos novos.
+      - name: Carimbar a versão nos arquivos estáticos
+        run: |
+          V="${GITHUB_SHA::7}"
+          sed -i -E "s|(href=\"style\.css)(\?v=[^\"]*)?\"|\1?v=$V\"|g"   index.html
+          sed -i -E "s|(src=\"script\.js)(\?v=[^\"]*)?\"|\1?v=$V\"|g"    index.html
+          echo "Versão carimbada: $V"
+          grep -nE 'style\.css|script\.js' index.html
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
