@@ -41,7 +41,7 @@ const CONFIG = {
   // ── Rifa solidária ────────────────────────────────────────
   sorteio: {
     ativo:  true,
-    premio: "Kit Jack Daniel's (garrafa + copo)",
+    premio: "Kit Jack Daniel's (garrafa + copo) + Ballena, licor cremoso com tequila",
     total:  100,        // números na cartela
     valor:  20,         // R$ por número
 
@@ -757,6 +757,13 @@ function mostrarPagamento() {
     <p class="pag-nums">Seus números: <b>${nums.map(pad2).join(' · ')}</b></p>
     <p class="pag-total">Contribuição: <b>R$ ${nums.length * CONFIG.sorteio.valor}</b></p>
 
+    <p class="pag-aviso">
+      <b>Isto é um ticket de reserva, ainda não é a confirmação.</b>
+      Os números acima ficam guardados no seu nome, mas só são
+      <b>reservados e confirmados de fato</b> quando você enviar o
+      comprovante do pagamento.
+    </p>
+
     ${temCopiaCola ? `
       <button type="button" class="btn btn-primario btn-largo" id="pag-copia">
         Copiar o PIX
@@ -778,8 +785,9 @@ function mostrarPagamento() {
       Enviar comprovante no WhatsApp
     </a>
     <p class="pag-nota">
-      Seus números já ficam guardados no seu nome. Quando der, é só mandar
-      o comprovante — e obrigado mesmo por essa força. 💗
+      Enquanto o comprovante não chega, seus números aparecem para os outros
+      como <i>reservados</i> — e é o envio dele que fecha a reserva.
+      Obrigado mesmo por essa força. 💗
     </p>`;
 
   const copia = document.getElementById('pag-copia');

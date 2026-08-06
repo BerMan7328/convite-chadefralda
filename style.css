@@ -515,8 +515,8 @@ ul { list-style: none; }
    o translateY do :hover. Tudo para ao primeiro toque. */
 .btn-pulsa {
   position: relative;
-  padding: 1.02rem 2.5rem;
-  font-size: 1.04rem;
+  padding: 1.14rem 2.9rem;
+  font-size: 1.12rem;
   letter-spacing: 0.05em;
 
   /* O brilho é uma camada de background, não um filho: assim ele já nasce
@@ -1013,6 +1013,21 @@ a.desativado { opacity: 0.4; cursor: not-allowed; }
 }
 .pag-codigo b { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; letter-spacing: 0.12em; color: var(--tinta); }
 .pag-nota { font-size: 0.8rem; color: var(--tinta-tenue); }
+
+/* Reservar não é pagar. Esse aviso é o único do painel que precisa ser lido
+   antes do resto, então ele tem peso de texto e barra de ouro — sem virar
+   alerta vermelho, que destoaria de um convite. */
+.pag-aviso {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  text-align: left;
+  color: var(--tinta);
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--r-sm);
+  border-left: 3px solid var(--ouro);
+  background: rgba(227,205,151,0.22);
+}
+.pag-aviso b { color: var(--ouro-fundo); font-weight: 600; }
 
 /* ══════════════ FORMULÁRIO ══════════════ */
 .form { display: flex; flex-direction: column; gap: 0.85rem; }
