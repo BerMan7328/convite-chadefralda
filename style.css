@@ -501,37 +501,84 @@ ul { list-style: none; }
 .btn-primario:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(111,127,92,0.36); }
 .btn-primario:disabled { opacity: 0.6; transform: none; cursor: wait; }
 
-/* O "Começar" é a única coisa que a pessoa precisa fazer na capa. Ele respira
-   devagar e solta um anel, pra ninguém ficar parado achando que acabou ali.
-   A respiração usa `scale` (propriedade própria) em vez de `transform`, senão
-   ela sobrescreveria o translateY do :hover. Para de pulsar ao ser tocado. */
+/* O "Começar" é a única coisa que a pessoa precisa fazer na capa — todo o resto
+   do convite está atrás dele. A primeira versão respirava devagar em verde sobre
+   creme e passava despercebida, então aqui ele é tratado como o único botão da
+   tela que importa:
+
+     TAMANHO   maior que o "Entrar no grupo" logo abaixo, que competia com ele
+     COR       anéis e brilho em ouro — o verde do botão sumia contra o creme
+     MOVIMENTO batida dupla com pausa, não uma senoide. O olho ignora movimento
+               constante e periférico; o que ele persegue é ritmo com descanso.
+
+   A batida usa `scale` (propriedade própria) e não `transform`, senão apagaria
+   o translateY do :hover. Tudo para ao primeiro toque. */
 .btn-pulsa {
   position: relative;
-  animation: respiraBotao 2.4s ease-in-out infinite;
+  padding: 1.02rem 2.5rem;
+  font-size: 1.04rem;
+  letter-spacing: 0.05em;
+
+  /* O brilho é uma camada de background, não um filho: assim ele já nasce
+     recortado na pílula e não precisa de overflow, que cortaria os anéis. */
+  background-image:
+    linear-gradient(102deg,
+      transparent 30%,
+      rgba(255,253,246,0.28) 40%,
+      rgba(227,205,151,0.85) 50%,
+      rgba(255,253,246,0.28) 60%,
+      transparent 70%),
+    linear-gradient(160deg, var(--salvia), var(--salvia-funda));
+  background-size: 200% 100%, 100% 100%;
+  background-position: 130% 0, 0 0;
+  box-shadow: 0 10px 26px rgba(111,127,92,0.34),
+              inset 0 0 0 1px rgba(255,253,246,0.30);
+
+  animation: batidaBotao 3s ease-in-out infinite,
+             brilhoBotao 3s ease-in-out infinite;
 }
-/* O anel nasce já fora da borda: em cima dela, verde sobre verde, ele some. */
+
+/* Os anéis nascem 3px fora da borda: em cima dela, some verde contra verde. */
 .btn-pulsa::before,
 .btn-pulsa::after {
   content: '';
   position: absolute;
   inset: -3px;
   border-radius: inherit;
-  border: 2px solid var(--salvia);
+  border: 2px solid var(--ouro);
   opacity: 0;
   pointer-events: none;
-  animation: anelBotao 2.4s ease-out infinite;
+  animation: anelBotao 3s ease-out infinite;
 }
-.btn-pulsa::after { animation-delay: 1.2s; }   /* o segundo anel sai no meio do ciclo */
+.btn-pulsa::after { animation-delay: 0.34s; }   /* o segundo anel sai na segunda batida */
 
-@keyframes respiraBotao { 0%, 100% { scale: 1; } 50% { scale: 1.045; } }
+/* Duas batidas rápidas e ~2s de descanso — é a pausa que faz a próxima ser vista. */
+@keyframes batidaBotao {
+  0%   { scale: 1; }
+  7%   { scale: 1.08; }
+  15%  { scale: 1.005; }
+  23%  { scale: 1.055; }
+  33%  { scale: 1; }
+  100% { scale: 1; }
+}
 @keyframes anelBotao {
-  0%   { scale: 1;    opacity: 0.6; }
-  55%  { scale: 1.22; opacity: 0.16; }
-  80%  { scale: 1.34; opacity: 0; }
-  100% { scale: 1.34; opacity: 0; }
+  0%   { scale: 1;    opacity: 0.85; }
+  55%  { scale: 1.26; opacity: 0.14; }
+  80%  { scale: 1.38; opacity: 0; }
+  100% { scale: 1.38; opacity: 0; }
+}
+/* O brilho atravessa depois das batidas, não junto: duas coisas ao mesmo tempo
+   viram uma coisa só e o olho não registra nenhuma. */
+@keyframes brilhoBotao {
+  0%,  42% { background-position: 130% 0, 0 0; }
+  78%, 100% { background-position: -40% 0, 0 0; }
 }
 
-.btn-pulsa:hover, .btn-pulsa:focus-visible { animation: none; scale: 1; }
+.btn-pulsa:hover, .btn-pulsa:focus-visible {
+  animation: none;
+  scale: 1;
+  background-position: 130% 0, 0 0;
+}
 .btn-pulsa:hover::before, .btn-pulsa:focus-visible::before,
 .btn-pulsa:hover::after,  .btn-pulsa:focus-visible::after { animation: none; }
 
