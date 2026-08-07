@@ -41,7 +41,8 @@ const CONFIG = {
   // ── Rifa solidária ────────────────────────────────────────
   sorteio: {
     ativo:  true,
-    premio: "Kit Jack Daniel's (garrafa + copo) + Ballena, licor cremoso com tequila",
+    // dois sorteios, um ganhador para cada prêmio
+    premio: "1º Kit Jack Daniel's (garrafa + copo) · 2º Ballena, licor cremoso com tequila",
     total:  100,        // números na cartela
     valor:  20,         // R$ por número
 
@@ -227,8 +228,6 @@ const STATE = {
 };
 
 const CHAVES = {
-  palpite:  'cdf-palpite',
-  revelado: 'cdf-revelado',
   grupo:    'cdf-grupo',
   volume:   'cdf-volume',
   mudo:     'cdf-mudo',
@@ -342,8 +341,11 @@ function initPalpite() {
   const times = document.getElementById('times');
   if (!times) return;
 
-  const salvo = ls.get(CHAVES.palpite);
-  if (salvo === 'Menino' || salvo === 'Menina') aplicarPalpite(salvo, false);
+  /* Nada de restaurar o palpite de uma visita anterior. Chegar na aposta com
+     um time já aceso faz a pessoa seguir em frente sem escolher — e o palpite
+     dela vira o que o navegador lembrou, não o que ela pensou. A escolha tem
+     que ser um ato, toda vez. Dentro da mesma visita o clique continua
+     preenchendo o formulário sozinho: ali ela já escolheu. */
 
   times.querySelectorAll('.time').forEach(t => {
     t.addEventListener('click', () => aplicarPalpite(t.dataset.palpite, true));
@@ -357,7 +359,6 @@ function initPalpite() {
 
 function aplicarPalpite(valor, interativo) {
   STATE.palpite = valor;
-  ls.set(CHAVES.palpite, valor);
 
   document.querySelectorAll('.time').forEach(t =>
     t.classList.toggle('escolhido', t.dataset.palpite === valor));
@@ -1179,7 +1180,6 @@ async function revelar(nome, palpite) {
 
 function marcarRevelado() {
   STATE.revelado = true;
-  ls.set(CHAVES.revelado, '1');
   const trava = document.getElementById('trava');
   const album = document.getElementById('album');
   if (trava) trava.classList.add('hidden');
@@ -1230,7 +1230,11 @@ function initAlbum() {
     });
   }
 
-  if (ls.get(CHAVES.revelado) === '1') marcarRevelado();
+  /* O álbum não reabre sozinho numa visita nova. Ele guarda o ultrassom e o
+     laudo — é a revelação inteira ali dentro. Deixar isso destravado porque
+     o navegador lembrou de uma visita anterior entrega a surpresa para quem
+     pegar o celular emprestado, e faz o convite parecer aberto por engano.
+     A trava só cai quando a pessoa confirma presença e vê a revelação. */
 }
 
 function abrirMidia(i) {

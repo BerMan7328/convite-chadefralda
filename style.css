@@ -515,9 +515,14 @@ ul { list-style: none; }
    o translateY do :hover. Tudo para ao primeiro toque. */
 .btn-pulsa {
   position: relative;
-  padding: 1.14rem 2.9rem;
-  font-size: 1.12rem;
+  padding: 1.28rem 3.4rem;
+  font-size: 1.24rem;
   letter-spacing: 0.05em;
+
+  /* "Começar" é uma palavra curta e o botão do WhatsApp, abaixo, é uma frase
+     inteira — sem isto o botão principal ficava mais estreito que o vizinho
+     mesmo sendo mais alto. O teto em vw protege as telas de 320px. */
+  min-width: min(17.5rem, 82vw);
 
   /* O brilho é uma camada de background, não um filho: assim ele já nasce
      recortado na pílula e não precisa de overflow, que cortaria os anéis. */
@@ -819,6 +824,33 @@ a.desativado { opacity: 0.4; cursor: not-allowed; }
 }
 .premio-nome { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; line-height: 1.15; }
 .premio-sub  { font-size: 0.84rem; color: var(--tinta-fraca); font-weight: 300; }
+
+/* São dois prêmios e dois ganhadores. Em texto corrido isso lia como um kit
+   só com duas peças, então cada sorteio ganhou sua linha. */
+.premio-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.9rem 0 0.7rem;
+  text-align: left;
+}
+.premio-lista li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--r-sm);
+  background: rgba(255,255,255,0.72);
+  border: 1px solid var(--fio-ouro);
+}
+.premio-lista b {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ouro-fundo);
+}
+.premio-lista span { font-size: 0.95rem; color: var(--tinta); }
 
 .cartela {
   display: grid;
