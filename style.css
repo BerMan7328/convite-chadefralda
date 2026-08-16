@@ -984,14 +984,26 @@ a.desativado { opacity: 0.4; cursor: not-allowed; }
 .carrinho-conta b { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; color: var(--tinta); }
 
 .rifa-form { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 0.2rem; }
-.btn-limpar {
+.btn-limpar,
+.link-discreto {
   align-self: center;
   font-size: 0.78rem;
   color: var(--tinta-tenue);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.btn-limpar:hover { color: var(--salvia-funda); }
+.btn-limpar:hover,
+.link-discreto:hover { color: var(--salvia-funda); }
+
+/* saídas do bloco confirmado: rever a revelação, corrigir a resposta */
+.retomar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+  text-align: center;
+}
 
 .pagamento {
   width: 100%;

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<!--
+  FONTE DA ARTE DE PREVIEW (assets/og.jpg)
+
+  É o card que aparece quando o link do convite é colado no WhatsApp. Repete a
+  capa de propósito, e não cita o nome do bebê: o preview não pode entregar o
+  que a revelação guarda.
+
+  Pra regerar depois de mudar data, horário ou cardápio:
+
+    chromium --headless --disable-gpu --hide-scrollbars \
+      --window-size=1240,800 --virtual-time-budget=12000 \
+      --screenshot=raw.png file://$PWD/tools/og.html
+
+    python3 -c "from PIL import Image; \
+      Image.open('raw.png').convert('RGB').crop((0,0,1200,630)) \
+      .save('assets/og.jpg','JPEG',quality=90,optimize=True)"
+
+  A janela é maior que a arte e o corte vem depois porque o headless não
+  entrega uma viewport de exatamente 630px de altura. As fontes vêm do Google
+  Fonts, então gere com internet.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Great+Vibes&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #fff; }
+  .og {
+    width: 1200px; height: 630px; overflow: hidden; position: relative;
+    background: linear-gradient(160deg, #fdfaf3 0%, #f7f0e3 55%, #f2e9d8 100%);
+    font-family: 'Outfit', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* as mesmas cortinas de sálvia do convite */
+  .blob { position: absolute; border-radius: 50%; filter: blur(2px); }
+  .b1 { width: 190px; height: 190px; background: #a3b18a; opacity: .32; top: -60px; left: -50px; }
+  .b2 { width: 120px; height: 120px; background: #c3cdb4; opacity: .45; top: 90px; left: 70px; }
+  .b3 { width: 70px;  height: 70px;  background: #c9a961; opacity: .35; top: 40px; left: 205px; }
+  .b4 { width: 54px;  height: 54px;  background: #e6ebde; opacity: .9;  top: 190px; left: 30px; }
+  .b5 { width: 230px; height: 230px; background: #a3b18a; opacity: .22; bottom: -90px; right: -60px; }
+  .b6 { width: 96px;  height: 96px;  background: #e3cd97; opacity: .35; bottom: 60px; right: 120px; }
+  .b7 { width: 46px;  height: 46px;  background: #c3cdb4; opacity: .55; bottom: 190px; right: 40px; }
+
+  .cartao {
+    position: relative;
+    width: 760px; padding: 62px 60px 54px;
+    background: linear-gradient(170deg, #fffdf8, #f7f0e3);
+    border: 1px solid rgba(201,169,97,0.55);
+    border-radius: 300px 300px 28px 28px;
+    box-shadow: 0 22px 56px rgba(68,63,51,0.14), 0 4px 14px rgba(68,63,51,0.06);
+    text-align: center;
+  }
+
+  .eyebrow {
+    font-size: 15px; font-weight: 500; letter-spacing: 0.28em;
+    text-transform: uppercase; color: #a3823f;
+  }
+
+  .titulo {
+    font-family: 'Great Vibes', cursive;
+    font-size: 128px; line-height: 0.92; color: #c08f2a;
+    margin: 14px 0 4px;
+    text-shadow:
+      0 1px 0 rgba(255,255,255,0.85),
+      0 0 7px rgba(255,238,196,0.95),
+      0 0 18px rgba(240,196,110,0.7),
+      0 0 38px rgba(214,160,60,0.35);
+  }
+
+  .fio {
+    display: flex; align-items: center; justify-content: center;
+    gap: 14px; margin: 22px 0 20px;
+  }
+  .fio span { display: block; width: 96px; height: 1px; background: rgba(201,169,97,0.7); }
+  .fio i { color: #c9a961; font-size: 17px; font-style: normal; }
+
+  .data {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 46px; font-weight: 500; color: #443f33; letter-spacing: 0.02em;
+  }
+  .hora {
+    font-size: 17px; font-weight: 300; color: #7a7364;
+    letter-spacing: 0.13em; text-transform: uppercase; margin-top: 10px;
+  }
+  .cardapio {
+    font-size: 16px; font-weight: 300; color: #a89f8d; margin-top: 22px;
+  }
+</style>
+</head>
+<body>
+<div class="og">
+  <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+  <span class="blob b4"></span><span class="blob b5"></span><span class="blob b6"></span>
+  <span class="blob b7"></span>
+
+  <div class="cartao">
+    <p class="eyebrow">Chá de fralda · Rodrigo &amp; Clara</p>
+    <h1 class="titulo">Falta pouco</h1>
+    <div class="fio"><span></span><i>&#10047;</i><span></span></div>
+    <p class="data">10 de outubro de 2026</p>
+    <p class="hora">sábado · a partir das 17h</p>
+    <p class="cardapio">Feijoada no capricho, petiscos da roça e chopp gelado</p>
+  </div>
+</div>
+</body>
+</html>

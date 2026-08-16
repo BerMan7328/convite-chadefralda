@@ -65,6 +65,18 @@ Salve o print do QR como **`assets/qr-grupo.png`**. Ele aparece embaixo do botã
 do WhatsApp, depois da confirmação. Se o arquivo não existir, o bloco some
 sozinho — nada quebra.
 
+### O card do WhatsApp
+
+O convite anda colado em conversa, e é o `og:image` que decide se o link chega
+como um card com arte ou como três linhas de texto. A arte é **`assets/og.jpg`**
+(1200×630), gerada a partir de `tools/og.html` — o comando está comentado lá
+dentro. Repete a capa e **não cita o nome do bebê**.
+
+A URL no `<meta>` é absoluta porque o WhatsApp ignora caminho relativo. Se o
+endereço do site mudar, os `og:url` e `og:image` do `index.html` mudam junto.
+O WhatsApp guarda o preview em cache por semanas: se trocar a arte depois de já
+ter divulgado, o card antigo continua aparecendo por um tempo.
+
 ### Rifa entre amigos
 
 Cartela de 100 números, seção própria. A pessoa escolhe **quantos quiser**, a
@@ -81,6 +93,27 @@ o copia e cola não é gerado e o site mostra só a chave.
 ⚠️ **Nenhum site estático confirma PIX sozinho** — isso exige um provedor com
 webhook e servidor. O fluxo aqui é: reserva entra como `reservado`, você marca
 `pago` na planilha quando o dinheiro cair, e o número muda de amarelo pra cinza.
+
+### Quem volta ao convite
+
+O convite lembra a visita anterior, **por aparelho** (`localStorage`), e remonta
+duas telas no boot:
+
+- **`cdf-rsvp`** → quem já confirmou volta direto no bloco de confirmação, com o
+  álbum aberto. Sem isso o formulário aparecia em branco de novo, e o caminho
+  natural era confirmar outra vez — duplicando a linha na planilha que decide a
+  feijoada.
+- **`cdf-rifa`** → quem já reservou volta com os números, o código e o PIX na
+  tela. O valor do copia e cola sai da quantidade de números restaurados, não
+  de um total salvo.
+
+Dois botões discretos saem daí: **rever a revelação** (para quem fechou a página
+no meio da animação) e **corrigir minha resposta**, que devolve o formulário
+preenchido — serve também pra segunda pessoa do mesmo celular confirmar a dela.
+
+Duas coisas que isso **não** faz, de propósito: não reacende o palpite na seção
+da aposta (a escolha tem que ser um ato, toda vez) e não impede a linha extra na
+planilha quando alguém corrige — vale a **última resposta do mesmo nome**.
 
 ### Trilha sonora
 

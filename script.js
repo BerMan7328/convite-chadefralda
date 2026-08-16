@@ -232,6 +232,7 @@ const CHAVES = {
   volume:   'cdf-volume',
   mudo:     'cdf-mudo',
   rsvp:     'cdf-rsvp',
+  rifa:     'cdf-rifa',
 };
 
 const ls = {
@@ -732,6 +733,7 @@ async function reservar() {
 
   nums.forEach(n => STATUS_NUM.set(n, 'reservado'));
   STATE.rifaReservada = { nums, nome, tel, codigo };
+  salvarRifaLocal();
   herdarContato(nome, tel);
   pintarCartela();   // a partir daqui a cartela fica fechada
 
@@ -740,7 +742,37 @@ async function reservar() {
   mostrarPagamento();
 }
 
-function mostrarPagamento() {
+/* A reserva vale dinheiro: o código é o que liga o comprovante ao número na
+   planilha, e ele só existia na memória da aba. Quem fechava a página depois
+   de reservar voltava sem código e sem o copia-e-cola, e ainda via os próprios
+   números como "reservado" de outra pessoa. */
+function salvarRifaLocal() {
+  try { ls.set(CHAVES.rifa, JSON.stringify(STATE.rifaReservada)); } catch (e) {}
+}
+
+function restaurarRifa() {
+  if (!CONFIG.sorteio.ativo) return;
+
+  let r = null;
+  try { r = JSON.parse(ls.get(CHAVES.rifa) || 'null'); } catch (e) {}
+  if (!r || !Array.isArray(r.nums) || !r.nums.length) return;
+
+  STATE.rifaReservada = r;
+  STATE.codigoRifa = r.codigo;
+
+  /* MEUS precisa voltar cheio, e não só por causa da cor na cartela: o valor
+     do PIX sai de MEUS.size. Sem isso a pessoa copiaria um código de R$ 20
+     para uma reserva de dez números. */
+  r.nums.forEach(n => { MEUS.add(Number(n)); STATUS_NUM.set(Number(n), 'reservado'); });
+
+  pintarCartela();
+  mostrarPagamento(false);
+}
+
+/* `festejar` é falso quando a tela está sendo remontada numa nova visita:
+   confete e rolagem automática pertencem ao momento em que a pessoa reserva,
+   não a toda vez que ela abre o convite. */
+function mostrarPagamento(festejar = true) {
   const { nums, codigo } = STATE.rifaReservada;
   const painel = document.getElementById('rifa-pagamento');
   const form = document.getElementById('rifa-form');
@@ -812,8 +844,10 @@ function mostrarPagamento() {
     wpp.href = `${base}?text=${encodeURIComponent(msg)}`;
   }
 
-  confete('duo', 40);
-  painel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (festejar) {
+    confete('duo', 40);
+    painel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 /* Lê da planilha os números reservados e pagos */
@@ -850,6 +884,22 @@ function initFormulario() {
     tel.addEventListener('input', aplica);
     tel.addEventListener('blur', aplica);
   }
+
+  /* Volta ao formulário — serve tanto pra corrigir um dado quanto pra segunda
+     pessoa do mesmo celular confirmar a dela por cima. Reenviar acrescenta uma
+     linha nova na planilha: vale a última do mesmo nome. */
+  const btnCorrigir = document.getElementById('btn-corrigir');
+  if (btnCorrigir) btnCorrigir.addEventListener('click', () => {
+    const anterior = ultimoRsvp();
+    if (anterior) preencherForm(form, anterior);
+    document.getElementById('confirmado').classList.add('hidden');
+    document.getElementById('form-area').classList.remove('hidden');
+    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  const btnRever = document.getElementById('btn-rever');
+  if (btnRever) btnRever.addEventListener('click', () =>
+    revelar(STATE.nome, STATE.palpite));
 
   form.addEventListener('submit', async e => {
     e.preventDefault();
@@ -901,6 +951,42 @@ function salvarLocal(dados) {
     todos.push({ ...dados, em: new Date().toISOString() });
     ls.set(CHAVES.rsvp, JSON.stringify(todos));
   } catch (e) { /* localStorage indisponível */ }
+}
+
+/* Guardamos o histórico inteiro, mas quem manda é a última resposta. */
+function ultimoRsvp() {
+  try {
+    const todos = JSON.parse(ls.get(CHAVES.rsvp) || '[]');
+    return Array.isArray(todos) && todos.length ? todos[todos.length - 1] : null;
+  } catch (e) { return null; }
+}
+
+/* O convite gravava a confirmação e nunca mais lia. Quem voltava no dia
+   seguinte encontrava o formulário em branco e o álbum trancado de novo — e o
+   caminho natural era confirmar outra vez, o que duplicava a linha na planilha
+   que decide a feijoada. Aqui a visita seguinte já começa confirmada. */
+function restaurarSessao() {
+  const dados = ultimoRsvp();
+  if (!dados) return;
+
+  STATE.nome = dados.nome || '';
+  STATE.palpite = dados.palpite || STATE.palpite;
+
+  /* Sem confete e sem animação: isto é memória, não é o momento da
+     confirmação. A revelação volta pelo "rever" que o marcarRevelado acende. */
+  mostrarConfirmado(dados, true);
+  marcarRevelado();
+}
+
+/* Preenche o formulário de volta com o que a pessoa já respondeu.
+   Num grupo de radios, `elements[nome].value = v` marca a opção certa
+   sozinho; em input, select e textarea é atribuição direta. */
+function preencherForm(form, dados) {
+  Object.entries(dados).forEach(([campo, valor]) => {
+    if (valor == null || valor === '') return;
+    const el = form.elements[campo];
+    if (el) el.value = valor;
+  });
 }
 
 function mostrarConfirmado(dados, ok) {
@@ -1184,6 +1270,10 @@ function marcarRevelado() {
   const album = document.getElementById('album');
   if (trava) trava.classList.add('hidden');
   if (album) album.classList.remove('hidden');
+
+  /* Quem já viu tem direito de rever — inclusive quem fechou a página no meio
+     da animação e voltou depois. */
+  document.getElementById('btn-rever')?.classList.remove('hidden');
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1598,6 +1688,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initRecados();
   initGrupo();
   initAudio();
+
+  /* Depois dos init: as duas remontam telas que os init acabaram de construir
+     (a cartela dos 100 números e o bloco de confirmação). */
+  restaurarRifa();
+  restaurarSessao();
 
   const ics = document.getElementById('btn-ics');
   if (ics) ics.addEventListener('click', baixarIcs);
