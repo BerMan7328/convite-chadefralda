@@ -17,8 +17,10 @@ Leva ~5 minutos.
 
 > **Sobre a coluna "Clicou no grupo":** o site não tem como saber se a pessoa
 > realmente entrou no WhatsApp — só que ela clicou no link. A coluna se chama
-> assim de propósito. O checkbox "já entrei no grupo" do formulário é a
-> declaração da própria pessoa; use as duas juntas.
+> assim de propósito. Como o link do grupo só aparece **depois** da
+> confirmação, essa coluna quase sempre chega como `Não` no `RSVP`: quem clica
+> faz isso na tela seguinte. **Quem entrou no grupo se lê na aba `Grupo`**, que
+> registra cada clique com hora e origem — cruze pelo nome.
 
 ---
 

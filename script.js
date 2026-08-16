@@ -851,11 +851,6 @@ function initFormulario() {
     tel.addEventListener('blur', aplica);
   }
 
-  if (ls.get(CHAVES.grupo) === '1') {
-    const c = document.getElementById('in-grupo');
-    if (c) c.checked = true;
-  }
-
   form.addEventListener('submit', async e => {
     e.preventDefault();
     if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -872,8 +867,13 @@ function initFormulario() {
     if (isNaN(qtd) || qtd < 1) dados.quantos = '1';
     else if (qtd > 5) { dados.quantos = '5'; toast('Máximo 5 pessoas. Ajustado para 5.'); }
 
-    dados.entrou_no_grupo = dados.grupo ? 'Sim' : 'Não';
-    delete dados.grupo;
+    /* O formulário não pergunta mais sobre o grupo: o link só aparece depois
+       desta confirmação, então marcar "já entrei" antes era impossível. A
+       coluna continua existindo na planilha e sai do único sinal honesto que
+       temos aqui — se este aparelho já clicou no link em alguma visita. Quem
+       clicar depois de confirmar entra pela aba "Grupo", que registra o
+       clique com hora e origem. */
+    dados.entrou_no_grupo = ls.get(CHAVES.grupo) === '1' ? 'Sim' : 'Não';
 
     STATE.nome = dados.nome || '';
     STATE.palpite = dados.palpite || STATE.palpite;
@@ -1367,8 +1367,6 @@ function initGrupo() {
   document.querySelectorAll('[data-cfg-href="whatsappGrupo"]').forEach(el => {
     el.addEventListener('click', () => {
       ls.set(CHAVES.grupo, '1');
-      const c = document.getElementById('in-grupo');
-      if (c) c.checked = true;
       enviar({ tipo: 'grupo-clique', nome: STATE.nome, origem: el.dataset.origem || 'link' });
     });
   });

@@ -1093,7 +1093,6 @@ a.desativado { opacity: 0.4; cursor: not-allowed; }
 .op-azul input { accent-color: var(--azul-forte); }
 .op-rosa:has(input:checked) { border-color: var(--rosa-forte); background: var(--rosa-tenue); }
 .op-rosa input { accent-color: var(--rosa-forte); }
-.op-check { border-radius: var(--r-sm); align-self: flex-start; }
 
 .teaser {
   text-align: center;
