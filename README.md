@@ -30,11 +30,11 @@ aparecendo letra a letra. Aí destrava a seção 8.
 O `<title>`, o Open Graph e os textos das seções não citam o nome do bebê em
 lugar nenhum — ele só aparece na animação, depois da confirmação.
 
-O grupo do WhatsApp já se chamou *"Convite chá de fralda Anna Laura"*, e o nome
-entregava a brincadeira; por isso o link vivia só no bloco pós-confirmação.
-O grupo foi renomeado, então agora o atalho também aparece na capa. **Se o nome
-do bebê voltar para o título do grupo, tire o atalho da capa** — senão o convite
-se estraga sozinho.
+O link do grupo do WhatsApp vive **só no bloco pós-confirmação**, junto com o
+QR code: igual ao álbum, ele só se abre depois que a pessoa confirma presença e
+vê a revelação. Fora o spoiler que o nome do grupo pode entregar, é o que faz o
+convidado percorrer o convite inteiro antes de entrar no grupo. **Não recoloque
+o atalho na capa.**
 
 ---
 

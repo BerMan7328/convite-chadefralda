@@ -450,34 +450,6 @@ ul { list-style: none; }
   margin-top: 0.2rem;
 }
 
-/* atalho pro grupo, logo abaixo do Começar */
-.wpp-capa {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 1.15rem 0.55rem 0.75rem;
-  border-radius: var(--pill);
-  background: rgba(255,255,255,0.82);
-  border: 1px solid var(--fio-ouro);
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--tinta-fraca);
-  transition: transform 0.25s var(--mola), box-shadow 0.25s, color 0.25s, background 0.25s;
-}
-.wpp-capa svg {
-  width: 22px; height: 22px;
-  flex: 0 0 auto;
-  fill: #3fa06a;
-  transition: transform 0.25s var(--mola);
-}
-.wpp-capa:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--sombra-sm);
-  color: var(--tinta);
-  background: #fff;
-}
-.wpp-capa:hover svg { transform: scale(1.1); }
-
 /* ══════════════ BOTÕES ══════════════ */
 .btn {
   display: inline-flex;

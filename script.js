@@ -42,7 +42,7 @@ const CONFIG = {
   sorteio: {
     ativo:  true,
     // dois sorteios, um ganhador para cada prêmio
-    premio: "1º Kit Jack Daniel's (garrafa + copo) · 2º Ballena, licor cremoso com tequila",
+    premio: "1º Kit Jack Daniel's (garrafa + copo) · 2º Kit de perfumaria O Boticário",
     total:  100,        // números na cartela
     valor:  20,         // R$ por número
 
