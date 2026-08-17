@@ -806,19 +806,44 @@ a.desativado { opacity: 0.4; cursor: not-allowed; }
 .premio-lista {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  width: min(100%, 19rem);
-  margin: 0.9rem auto 0.75rem;
+  gap: 0.7rem;
+  /* 94% e não 100%: a primeira linha nasce onde o arco ainda está fechando,
+     e a foto encostava na curva nas telas de 360px. */
+  width: min(94%, 21rem);
+  margin: 1.05rem auto 0.85rem;
   text-align: center;
 }
+/* Com a foto ao lado, cada sorteio virou uma linha: retrato à esquerda,
+   texto à direita. Os dois retratos têm a mesma proporção (4:5) e a mesma
+   moldura, então as duas linhas ficam alinhadas mesmo com fotos de origens
+   diferentes — uma de celular, outra de catálogo. */
 .premio-lista li {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.85rem;
+  text-align: left;
+}
+.premio-lista li + li {
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--fio-ouro);
+}
+.premio-foto {
+  flex: 0 0 auto;
+  width: 4.6rem;
+  aspect-ratio: 4 / 5;
+  height: auto;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--fio-ouro);
+  background: #fffdf8;
+  box-shadow: 0 3px 10px rgba(68, 63, 51, 0.12);
+}
+.premio-txt {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-}
-.premio-lista li + li {
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--fio-ouro);
+  min-width: 0;
 }
 .premio-lista b {
   font-size: 0.68rem;
