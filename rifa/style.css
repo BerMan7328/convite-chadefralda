@@ -1,0 +1,225 @@
+/* ══════════════════════════════════════════════════════════════
+   RIFA — Anna Laura · página independente
+
+   Reaproveita os tokens, fontes, botões e componentes de ../style.css
+   (cartão em arco, cartela, carrinho, formulário, painel de pagamento).
+   Este arquivo só adapta o layout: aqui não há "deck" de slides — é uma
+   página única, comprida, que rola normalmente — e acrescenta a etiqueta
+   de texto (livre/reservado/vendido) em cada número, como no cartaz de
+   referência.
+══════════════════════════════════════════════════════════════ */
+
+/* a base tranca o <body> em 100dvh pro scroll-snap do convite; aqui a
+   página é uma coisa só, comprida, com rolagem normal */
+.rifa-body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: auto;
+  min-height: 100dvh;
+}
+
+.rifa-pagina {
+  position: relative;
+  z-index: 1;
+  width: min(640px, 100%);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(2rem, 5vw, 2.6rem);
+  padding: clamp(3rem, 9vh, 4.5rem) 1.25rem clamp(3.5rem, 9vh, 5rem);
+}
+
+.rifa-pagina .botanica-esq { top: 2%; left: 2%; bottom: auto; }
+.rifa-pagina .botanica-dir { bottom: 2%; top: auto; right: 2%; }
+
+/* ══════════════ CABEÇALHO ══════════════ */
+.rifa-hero {
+  position: relative;
+  width: 100%;
+  text-align: center;
+  padding: clamp(2rem, 7vw, 2.8rem) clamp(1.2rem, 5vw, 2rem) clamp(1.6rem, 4vw, 2rem);
+  border-radius: var(--arco);
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 28%, rgba(255,241,206,0.9), transparent 70%),
+    linear-gradient(170deg, #fffdf8, var(--creme-quente));
+  box-shadow: var(--sombra-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+}
+.rifa-hero::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border: 1px solid var(--fio-ouro);
+  border-radius: 999px 999px 16px 16px;
+  pointer-events: none;
+}
+
+.rifa-titulo {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(1.9rem, 6.4vw, 2.7rem);
+  line-height: 1.18;
+  color: var(--tinta);
+}
+.rifa-titulo em {
+  font-style: normal;
+  font-family: 'Great Vibes', cursive;
+  font-size: 1.55em;
+  line-height: 1;
+  color: #c08f2a;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.85), 0 0 14px rgba(240,196,110,0.5);
+}
+
+.rifa-preco {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: var(--pill);
+  background: rgba(255,255,255,0.72);
+  border: 1px solid var(--fio-ouro);
+}
+/* só os filhos diretos (as duas legendas) — o span aninhado dentro do <b>
+   (#valor-numero) não pode entrar aqui, senão herda esse tamanho pequeno
+   em vez do 1.9rem do <b>, e o "20" fica minúsculo entre "R$" e ",00". */
+.rifa-preco > span { font-size: 0.78rem; color: var(--tinta-fraca); font-weight: 300; }
+.rifa-preco b {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.9rem;
+  color: var(--ouro-fundo);
+  line-height: 1.15;
+}
+
+/* ══════════════ SEÇÃO DA CARTELA ══════════════ */
+.rifa-secao {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+.rifa-secao .sub-titulo { font-size: clamp(1.3rem, 4.4vw, 1.6rem); }
+
+/* Cada número mostra o status por baixo dele — não só a cor — pra quem
+   olha rápido (ou usa leitor de tela) não depender de decorar a legenda. */
+.cartela-grande {
+  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+  gap: 8px;
+}
+.cartela-grande .num {
+  aspect-ratio: auto;
+  min-height: 3.4rem;
+  flex-direction: column;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.cartela-grande .num[data-status]::after {
+  content: attr(data-status);
+  font-size: 0.46rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+/* livre não carrega data-status (rifa-core só grava pra pago/reservado) —
+   o rótulo "disponível" mora só aqui, via CSS, pra manter o motor
+   compartilhado (rifa-core.js) sem opinião sobre o texto desta página. */
+.cartela-grande .num:not(.pago):not(.reservado):not(.meu)::after {
+  content: 'disponível';
+  font-size: 0.46rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--tinta-tenue);
+}
+
+/* "vendido" segue a cor de destaque do cartaz de referência — rosa sólido,
+   bem diferente do "reservado" (sálvia claro), pra não precisar ler a
+   etiqueta pra distinguir os dois. Sobrescreve o cinza discreto que
+   ../style.css usa pra ".pago" no convite (lá o rótulo é outro). */
+.cartela-grande .num.pago,
+.cartela-grande .num.reservado {
+  position: relative;
+  border-color: transparent;
+  text-decoration: none;
+  /* esmaecido de verdade — passa "indisponível" à distância, sem apagar o
+     número nem a etiqueta, que continuam legíveis por baixo. */
+  opacity: 0.6;
+  overflow: hidden;
+}
+.cartela-grande .num.pago {
+  background: linear-gradient(160deg, var(--rosa), var(--rosa-forte));
+  color: #fffdf6;
+}
+.cartela-grande .num.reservado {
+  background: var(--salvia-tenue);
+  color: var(--salvia-funda);
+}
+/* a marca (X ou círculo) cobre só a metade de cima da célula — onde o
+   número fica — e para antes da faixa de baixo, onde a etiqueta de status
+   (attr(data-status), via ::after) precisa continuar 100% legível. Usa
+   ::before (não ::after) porque o ::after já está ocupado pelo rótulo:
+   mesma especificidade, a regra declarada depois vencia e apagava o
+   "content" do rótulo. */
+.cartela-grande .num.pago::before,
+.cartela-grande .num.reservado::before {
+  content: '';
+  position: absolute;
+  inset: 10% 14% 44% 14%;
+  pointer-events: none;
+}
+/* vendido ("já tem dono") risca o número com um X */
+.cartela-grande .num.pago::before {
+  background:
+    linear-gradient(35deg,  transparent 46%, currentColor 46%, currentColor 54%, transparent 54%),
+    linear-gradient(-35deg, transparent 46%, currentColor 46%, currentColor 54%, transparent 54%);
+  opacity: 0.7;
+}
+/* reservado marca o número com um círculo, não um X */
+.cartela-grande .num.reservado::before {
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+.cartela-grande .num.meu::after {
+  content: 'seu';
+  font-size: 0.46rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* a legenda também usa o rosa do "vendido" nesta página, pra bater com a
+   cor real da célula (na base ela é cinza, porque lá o rótulo é outro) */
+.leg-pago { background: linear-gradient(160deg, var(--rosa), var(--rosa-forte)); border: none; }
+
+/* ══════════════ RODAPÉ ══════════════ */
+.rifa-rodape {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  text-align: center;
+}
+.rifa-obrigado {
+  font-family: 'Great Vibes', cursive;
+  font-size: 1.6rem;
+  line-height: 1.3;
+  color: var(--salvia-funda);
+}
+.rifa-obrigado span { font-family: initial; }
+
+@media (max-width: 480px) {
+  .cartela-grande { grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
+  .cartela-grande .num { min-height: 2.9rem; font-size: 0.8rem; }
+}

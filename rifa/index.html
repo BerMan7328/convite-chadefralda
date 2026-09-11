@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#FDFAF3">
+  <title>Rifa — Chá de Fralda da Anna Laura</title>
+  <meta name="description" content="Rifa solidária do chá de fralda da Anna Laura. Escolha seu número, cada um custa R$ 20 — ajude a montar o enxoval e concorra aos prêmios.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Rifa — Chá de Fralda da Anna Laura">
+  <meta property="og:description" content="Escolha seu número e ajude a montar o enxoval da Anna Laura. Cada número: R$ 20.">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:url" content="https://berman7328.github.io/convite-chadefralda/rifa/">
+  <meta property="og:image" content="https://berman7328.github.io/convite-chadefralda/assets/og.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Great+Vibes&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Cpath%20d='M16%2028.6%204.7%2017.7C1.3%2014.4%201.5%208.9%205.1%205.9c3.1-2.6%207.7-2%2010.3%201.1l.6.8.6-.8c2.6-3.1%207.2-3.7%2010.3-1.1%203.6%203%203.8%208.5.4%2011.8L16%2028.6z'%20fill='%23d92d2d'/%3E%3C/svg%3E">
+</head>
+<body class="rifa-body">
+
+<div class="blobs" aria-hidden="true">
+  <span class="blob blob-a"></span>
+  <span class="blob blob-b"></span>
+  <span class="blob blob-c"></span>
+</div>
+
+<svg class="sprite" aria-hidden="true">
+  <defs>
+    <symbol id="orn-ramo" viewBox="0 0 100 160">
+      <path d="M50 158 C50 110 46 60 40 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+        <path d="M47 128 C30 122 22 108 20 94"/><path d="M47 128 C64 120 74 106 76 92"/>
+        <path d="M45 100 C29 95 21 82 20 69"/><path d="M45 100 C61 93 70 80 71 67"/>
+        <path d="M43 72  C29 68 22 57 21 46"/><path d="M43 72  C57 66 65 55 66 44"/>
+        <path d="M41 46  C30 43 24 34 23 25"/><path d="M41 46  C53 41 59 32 60 23"/>
+      </g>
+      <g fill="currentColor" opacity="0.75">
+        <ellipse cx="20" cy="94" rx="6" ry="3.4" transform="rotate(-24 20 94)"/>
+        <ellipse cx="76" cy="92" rx="6" ry="3.4" transform="rotate(24 76 92)"/>
+        <ellipse cx="20" cy="69" rx="5.4" ry="3.1" transform="rotate(-24 20 69)"/>
+        <ellipse cx="71" cy="67" rx="5.4" ry="3.1" transform="rotate(24 71 67)"/>
+        <ellipse cx="21" cy="46" rx="4.8" ry="2.8" transform="rotate(-24 21 46)"/>
+        <ellipse cx="66" cy="44" rx="4.8" ry="2.8" transform="rotate(24 66 44)"/>
+        <circle cx="40" cy="8" r="4"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<main class="rifa-pagina">
+  <svg class="botanica botanica-esq" viewBox="0 0 100 160" aria-hidden="true"><use href="#orn-ramo"></use></svg>
+  <svg class="botanica botanica-dir" viewBox="0 0 100 160" aria-hidden="true"><use href="#orn-ramo"></use></svg>
+
+  <header class="rifa-hero">
+    <p class="eyebrow">rifa · escolha seu número e participe</p>
+    <h1 class="rifa-titulo">Chá de fralda da<br><em>Anna Laura</em></h1>
+    <div class="rifa-preco">
+      <span>Cada número custa</span>
+      <b>R$ <span id="valor-numero">20</span>,00</b>
+      <span>Compre quantos quiser!</span>
+    </div>
+  </header>
+
+  <section class="rifa-secao" aria-labelledby="rifa-secao-titulo">
+    <h2 id="rifa-secao-titulo" class="sub-titulo">Escolha seu número</h2>
+
+    <div class="cartela cartela-grande" id="cartela"
+         role="group" aria-label="Cartela de números"></div>
+
+    <!-- some assim que a consulta à planilha responde -->
+    <p class="cartela-espera hidden" id="cartela-espera" aria-live="polite">
+      Conferindo quais números já foram reservados…
+    </p>
+
+    <p class="legenda-cartela">
+      <span class="leg leg-livre"></span> livre
+      <span class="leg leg-reservado"></span> reservado
+      <span class="leg leg-pago"></span> vendido
+    </p>
+
+    <!-- carrinho + dados de quem escolheu -->
+    <div class="carrinho hidden" id="carrinho">
+      <p class="carrinho-rot">Seus números</p>
+      <div class="carrinho-nums" id="carrinho-nums"></div>
+      <p class="carrinho-conta" id="carrinho-conta"></p>
+
+      <div class="rifa-form" id="rifa-form">
+        <label class="campo">
+          <span class="campo-rot">Seu nome</span>
+          <input type="text" id="rifa-nome" autocomplete="name" placeholder="Como te chamam">
+        </label>
+        <label class="campo">
+          <span class="campo-rot">WhatsApp</span>
+          <input type="tel" id="rifa-whatsapp" inputmode="tel" autocomplete="tel"
+                 placeholder="(31) 9 9999-9999">
+        </label>
+        <button type="button" class="btn btn-primario btn-largo" id="rifa-reservar">
+          Reservar
+        </button>
+        <button type="button" class="btn-limpar" id="rifa-limpar">limpar escolha</button>
+      </div>
+    </div>
+
+    <div class="pagamento hidden" id="rifa-pagamento"></div>
+  </section>
+
+  <section class="premio" aria-label="Prêmios">
+    <span class="tag tag-ambar">os prêmios</span>
+    <p class="premio-nome">São dois sorteios</p>
+    <ul class="premio-lista">
+      <li>
+        <img class="premio-foto" src="../assets/premios/01-jack-daniels.jpg"
+             width="720" height="900" loading="lazy" decoding="async"
+             alt="Kit Jack Daniel's Tennessee Honey: garrafa de 1 litro e copo">
+        <div class="premio-txt">
+          <b>1º sorteio</b>
+          <span>Kit Jack Daniel's — garrafa e copo</span>
+        </div>
+      </li>
+      <li>
+        <img class="premio-foto" src="../assets/premios/02-boticario.jpg"
+             width="720" height="900" loading="lazy" decoding="async"
+             alt="Kit Nativa SPA Ameixa d'O Boticário: sabonete líquido e loção">
+        <div class="premio-txt">
+          <b>2º sorteio</b>
+          <span>Kit de perfumaria O Boticário</span>
+        </div>
+      </li>
+    </ul>
+    <p class="premio-sub">Um ganhador para cada prêmio, sorteados entre
+      todos os números no dia da festa.</p>
+  </section>
+
+  <footer class="rifa-rodape">
+    <p class="rifa-obrigado">Obrigado! <span>💛</span><br>
+      Sua participação faz toda a diferença para a chegada da nossa Anna Laura.</p>
+
+    <a class="btn btn-suave" href="../index.html">Ver o convite completo</a>
+  </footer>
+</main>
+
+<div id="confete" class="confete" aria-hidden="true"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="../rifa-core.js?v=1"></script>
+<script src="script.js?v=1"></script>
+</body>
+</html>

@@ -39,31 +39,9 @@ const CONFIG = {
   whatsappNumero: '5531982985951',   // 55 + DDD + número, só dígitos
 
   // ── Rifa solidária ────────────────────────────────────────
-  sorteio: {
-    ativo:  true,
-    // dois sorteios, um ganhador para cada prêmio
-    premio: "1º Kit Jack Daniel's (garrafa + copo) · 2º Kit de perfumaria O Boticário",
-    total:  100,        // números na cartela
-    valor:  20,         // R$ por número
-
-    // ⚠️ PENDENTE — dados do PIX. Os três primeiros são obrigatórios
-    // para gerar o "copia e cola"; sem eles só a chave é exibida.
-    pix: {
-      // Escreva a chave do jeito que ela está cadastrada no banco.
-      // O tipo é detectado sozinho e o formato do BR Code é ajustado:
-      //   celular  '31983790303'          -> +5531983790303
-      //   CPF      '12345678909'          -> 12345678909
-      //   CNPJ     '12345678000199'       -> 12345678000199
-      //   e-mail   'nome@email.com'       -> como está
-      //   aleatória (UUID)                -> como está
-      chave:  'rodrigolino102013@gmail.com',
-      nome:   'Rodrigo Lino Malta',   // como está no banco (máx. 25)
-      cidade: 'Belo Horizonte',       // (máx. 15)
-    },
-
-    // números já ocupados na mão. O site também lê os da planilha.
-    ocupados: [],
-  },
+  // Os dados da rifa (valor, total de números, prêmio, chave PIX) moraram
+  // pra rifa-core.js — é lá que o convite E a página /rifa/ leem, pra não
+  // ter dois lugares pra manter em dia. Mexa neles em RifaCore.sorteio.
 
   // ── Galeria do último slide ───────────────────────────────
   // Aceita 'foto', 'gif' e 'video'. Arquivos em assets/galeria/.
@@ -176,7 +154,7 @@ function buildWazeUrl() {
 
 function applyConfig() {
   const vn = document.getElementById('valor-numero');
-  if (vn) vn.textContent = `R$ ${CONFIG.sorteio.valor}`;
+  if (vn) vn.textContent = `R$ ${RifaCore.sorteio.valor}`;
 
   const fonte = { ...CONFIG, ...DERIVADO };
   document.querySelectorAll('[data-cfg]').forEach(el => {
@@ -232,7 +210,6 @@ const CHAVES = {
   volume:   'cdf-volume',
   mudo:     'cdf-mudo',
   rsvp:     'cdf-rsvp',
-  rifa:     'cdf-rifa',
 };
 
 const ls = {
@@ -397,236 +374,36 @@ function mascaraTelefone(bruto) {
 
 
 /* ══════════════════════════════════════════════════════════════
-   PIX COPIA E COLA — BR Code (padrão EMV do Banco Central)
-
-   Monta a string que a pessoa cola no app do banco. Cada número da
-   rifa vira um identificador próprio (RIFA042), que aparece no
-   extrato — é assim que você sabe de quem é cada pagamento.
+   RIFA — a lógica compartilhada (PIX, cartela, planilha) mora em
+   rifa-core.js, que este arquivo carrega antes de script.js. Aqui só fica
+   a "cola" com os ids desta página e as reações que são só do convite
+   (o formulário de presença já preenchido, o confete ao reservar).
 ══════════════════════════════════════════════════════════════ */
-function tlv(id, valor) {
-  return id + String(valor.length).padStart(2, '0') + valor;
-}
-
-/* CRC16-CCITT (polinômio 0x1021, inicial 0xFFFF) — exigido pelo padrão */
-function crc16(texto) {
-  let crc = 0xFFFF;
-  for (let i = 0; i < texto.length; i++) {
-    crc ^= texto.charCodeAt(i) << 8;
-    for (let b = 0; b < 8; b++) {
-      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
-    }
-  }
-  return crc.toString(16).toUpperCase().padStart(4, '0');
-}
-
-/* o padrão só aceita ASCII maiúsculo em nome e cidade */
-function limpar(txt, max) {
-  return (txt || '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^A-Za-z0-9 ]/g, '')
-    .toUpperCase().trim().slice(0, max);
-}
-
-/* CPF e celular têm os mesmos 11 dígitos: só os dígitos verificadores
-   distinguem. Sem essa checagem, um CPF viraria '+55' + CPF e o banco
-   devolveria "chave inválida". */
-function cpfValido(c) {
-  if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
-  for (const n of [9, 10]) {
-    let soma = 0;
-    for (let i = 0; i < n; i++) soma += Number(c[i]) * (n + 1 - i);
-    let d = (soma * 10) % 11;
-    if (d === 10) d = 0;
-    if (d !== Number(c[n])) return false;
-  }
-  return true;
-}
-
-function normalizarChavePix(bruta) {
-  const chave = (bruta || '').trim();
-  if (!chave) return '';
-
-  if (chave.includes('@')) return chave;                       // e-mail
-  if (chave.startsWith('+')) return chave;                     // já formatada
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(chave)) return chave;  // aleatória (UUID)
-
-  const digitos = chave.replace(/\D/g, '');
-  if (digitos.length === 14) return digitos;                   // CNPJ
-  if (digitos.length === 11) {
-    if (cpfValido(digitos)) return digitos;                    // CPF
-    return '+55' + digitos;                                    // celular
-  }
-  if (digitos.length === 13 && digitos.startsWith('55')) return '+' + digitos;
-
-  return chave;
-}
-
-function pixCopiaECola() {
-  const { nome, cidade } = CONFIG.sorteio.pix;
-  const chave = normalizarChavePix(CONFIG.sorteio.pix.chave);
-  if (!chave || !nome || !cidade) return '';
-
-  // '***' significa "sem identificador". Um txid personalizado é
-  // permitido pela especificação, mas vários bancos recusam o código
-  // estático quando ele não é '***' — e um código recusado é pior do
-  // que perder a identificação automática no extrato.
-  const txid = '***';
-  const valorTotal = (MEUS.size || 1) * CONFIG.sorteio.valor;
-  const conta = tlv('00', 'br.gov.bcb.pix') + tlv('01', chave);
-
-  let carga =
-    tlv('00', '01') +
-    tlv('26', conta) +
-    tlv('52', '0000') +
-    tlv('53', '986') +
-    tlv('54', valorTotal.toFixed(2)) +
-    tlv('58', 'BR') +
-    tlv('59', limpar(nome, 25)) +
-    tlv('60', limpar(cidade, 15)) +
-    tlv('62', tlv('05', txid));
-
-  carga += '6304';
-  return carga + crc16(carga);
-}
-
-async function copiar(texto, msgOk) {
-  try {
-    await navigator.clipboard.writeText(texto);
-    toast(msgOk);
-    return true;
-  } catch (err) {
-    // navegador sem clipboard API ou página fora de https
-    const ta = document.createElement('textarea');
-    ta.value = texto;
-    ta.style.cssText = 'position:fixed;opacity:0';
-    document.body.appendChild(ta);
-    ta.select();
-    let ok = false;
-    try { ok = document.execCommand('copy'); } catch (e) {}
-    document.body.removeChild(ta);
-    toast(ok ? msgOk : 'Não consegui copiar. Selecione e copie na mão.');
-    return ok;
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   CARTELA — a tela dos 100 números
-══════════════════════════════════════════════════════════════ */
-/* Números que não estão mais livres: n -> 'reservado' | 'pago' */
-const STATUS_NUM = new Map();
-/* Quando a lista de ocupados foi atualizada pela última vez. Serve pra não
-   repetir a consulta de ~2,3s no momento em que a pessoa aperta Reservar. */
-let ULTIMA_CONSULTA = 0;
-const VALIDADE_CONSULTA = 10000;
-
-/* Os números que ESTA pessoa escolheu agora */
-const MEUS = new Set();
-
 function initCartela() {
-  const grade = document.getElementById('cartela');
-  if (!grade) return;
-
-  if (!CONFIG.sorteio.ativo) {
-    const sec = grade.closest('.slide');
-    if (sec) sec.remove();
-    return;
-  }
-
-  (CONFIG.sorteio.ocupados || []).forEach(n => STATUS_NUM.set(Number(n), 'pago'));
-
-  const frag = document.createDocumentFragment();
-  for (let n = 1; n <= CONFIG.sorteio.total; n++) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'num';
-    b.textContent = pad2(n);
-    b.dataset.n = n;
-    frag.appendChild(b);
-  }
-  grade.appendChild(frag);
-
-  grade.addEventListener('click', e => {
-    const b = e.target.closest('.num');
-    if (b && !b.disabled) alternarNumero(Number(b.dataset.n));
+  RifaCore.init({
+    sheetsEndpoint: CONFIG.sheetsEndpoint,
+    whatsappNumero: CONFIG.whatsappNumero,
+    rotulos: { pago: 'pago' },
+    ids: {
+      cartela: 'cartela',
+      cartelaEspera: 'cartela-espera',
+      carrinho: 'carrinho',
+      carrinhoNums: 'carrinho-nums',
+      carrinhoConta: 'carrinho-conta',
+      rifaForm: 'rifa-form',
+      rifaNome: 'rifa-nome',
+      rifaWhatsapp: 'rifa-whatsapp',
+      rifaReservar: 'rifa-reservar',
+      rifaLimpar: 'rifa-limpar',
+      rifaPagamento: 'rifa-pagamento',
+    },
+    on: {
+      toast,
+      confete: () => confete('duo', 40),
+      contato: herdarContato,
+      desativado: grade => grade.closest('.slide')?.remove(),
+    },
   });
-
-  // Enquanto não soubermos o que já foi levado, ninguém clica. Sem isso
-  // alguém escolheria um número de outra pessoa só porque a resposta da
-  // planilha ainda não tinha chegado.
-  const espera = document.getElementById('cartela-espera');
-  if (CONFIG.sheetsEndpoint) {
-    grade.classList.add('verificando');
-    // o esqueleto brilhando não diz o que está havendo, e a consulta ao
-    // Apps Script leva uns 2s (bem mais na primeira do dia). Sem um texto,
-    // quem toca nesse intervalo acha que a cartela travou.
-    espera?.classList.remove('hidden');
-  }
-
-  pintarCartela();
-
-  buscarNumerosOcupados().finally(() => {
-    grade.classList.remove('verificando');
-    espera?.classList.add('hidden');
-    pintarCartela();
-  });
-
-  const tel = document.getElementById('rifa-whatsapp');
-  if (tel) {
-    const aplica = () => {
-      const f = mascaraTelefone(tel.value);
-      if (f !== tel.value) tel.value = f;
-    };
-    tel.addEventListener('input', aplica);
-    tel.addEventListener('blur', aplica);
-  }
-
-  const btnReservar = document.getElementById('rifa-reservar');
-  if (btnReservar) btnReservar.addEventListener('click', reservar);
-
-  const btnLimpar = document.getElementById('rifa-limpar');
-  if (btnLimpar) btnLimpar.addEventListener('click', () => {
-    MEUS.clear();
-    pintarCartela();
-    atualizarCarrinho();
-  });
-}
-
-function pintarCartela() {
-  const travada = document.getElementById('cartela')?.classList.contains('verificando');
-  /* Depois de reservar, a escolha está gravada na planilha e o código da
-     reserva já foi entregue: mexer na cartela aqui só criaria divergência
-     entre o que a pessoa vê e o que está registrado. */
-  const jaReservou = !!STATE.rifaReservada;
-
-  document.querySelectorAll('.num').forEach(b => {
-    const n = Number(b.dataset.n);
-    const status = STATUS_NUM.get(n);
-    const meu = MEUS.has(n);
-
-    b.classList.toggle('meu', meu);
-    b.classList.toggle('pago', status === 'pago' && !meu);
-    b.classList.toggle('reservado', status === 'reservado' && !meu);
-    b.disabled = travada || jaReservou || (!!status && !meu);
-    b.title = jaReservou && meu ? 'Reserva confirmada'
-            : status === 'pago' ? 'Número já pago'
-            : status === 'reservado' ? 'Número reservado, aguardando pagamento'
-            : '';
-  });
-}
-
-function alternarNumero(n) {
-  if (STATE.rifaReservada) return;   // reserva fechada, não se mexe mais
-  const primeiro = MEUS.size === 0;
-  MEUS.has(n) ? MEUS.delete(n) : MEUS.add(n);
-  pintarCartela();
-  atualizarCarrinho();
-
-  /* Atualiza a lista em segundo plano já na primeira escolha: enquanto a
-     pessoa digita nome e WhatsApp, a consulta termina — e o Reservar não
-     precisa mais parar pra esperar. */
-  if (primeiro && Date.now() - ULTIMA_CONSULTA > VALIDADE_CONSULTA) {
-    buscarNumerosOcupados();
-  }
 }
 
 /* A rifa é opcional, mas quem passa por ela já digitou nome e WhatsApp.
@@ -640,235 +417,6 @@ function herdarContato(nome, tel) {
   const campoTel  = form.querySelector('input[name="whatsapp"]');
   if (campoNome && !campoNome.value.trim() && nome) campoNome.value = nome;
   if (campoTel  && !campoTel.value.trim()  && tel)  campoTel.value  = tel;
-}
-
-function numerosOrdenados() {
-  return [...MEUS].sort((a, b) => a - b);
-}
-
-function totalCarrinho() {
-  return MEUS.size * CONFIG.sorteio.valor;
-}
-
-function atualizarCarrinho() {
-  const box = document.getElementById('carrinho');
-  if (!box) return;
-
-  if (!MEUS.size) { box.classList.add('hidden'); return; }
-  box.classList.remove('hidden');
-
-  const nums = numerosOrdenados();
-  const chips = document.getElementById('carrinho-nums');
-  if (chips) {
-    chips.innerHTML = nums
-      .map(n => `<button type="button" class="chip-num" data-tira="${n}"
-                   aria-label="Tirar o número ${pad2(n)}">${pad2(n)} <i>×</i></button>`)
-      .join('');
-    chips.querySelectorAll('[data-tira]').forEach(b =>
-      b.addEventListener('click', () => alternarNumero(Number(b.dataset.tira))));
-  }
-
-  const conta = document.getElementById('carrinho-conta');
-  if (conta) {
-    conta.innerHTML = `${MEUS.size} ${MEUS.size === 1 ? 'número' : 'números'}
-      · contribuição de <b>R$ ${totalCarrinho()}</b>`;
-  }
-
-  const btn = document.getElementById('rifa-reservar');
-  if (btn) btn.textContent = `Reservar ${MEUS.size} ${MEUS.size === 1 ? 'número' : 'números'}`;
-}
-
-/* Código curto que agrupa a reserva e aparece no seu extrato do PIX */
-function codigoReserva() {
-  if (!STATE.codigoRifa) {
-    const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let c = '';
-    for (let i = 0; i < 4; i++) c += letras[Math.floor(Math.random() * letras.length)];
-    STATE.codigoRifa = c;
-  }
-  return STATE.codigoRifa;
-}
-
-async function reservar() {
-  const nome = (document.getElementById('rifa-nome')?.value || '').trim();
-  const tel  = (document.getElementById('rifa-whatsapp')?.value || '').trim();
-
-  if (!MEUS.size)    { toast('Escolha pelo menos um número.'); return; }
-  if (!nome || !tel) { toast('Preencha seu nome e WhatsApp.'); return; }
-
-  const btn = document.getElementById('rifa-reservar');
-  const txt = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = 'Reservando...';
-
-  // reconfere: algum número pode ter sido levado enquanto a pessoa escolhia.
-  // Se a atualização em segundo plano acabou de rodar, aproveita ela.
-  if (Date.now() - ULTIMA_CONSULTA > VALIDADE_CONSULTA) {
-    await buscarNumerosOcupados();
-  }
-  const perdidos = numerosOrdenados().filter(n => STATUS_NUM.has(n));
-  perdidos.forEach(n => MEUS.delete(n));
-
-  if (perdidos.length) {
-    pintarCartela();
-    atualizarCarrinho();
-    btn.disabled = false;
-    btn.textContent = txt;
-    toast(`Levaram o ${perdidos.map(pad2).join(', ')}. Confere os que sobraram.`, 4500);
-    return;
-  }
-
-  const nums = numerosOrdenados();
-  const codigo = codigoReserva();
-
-  await enviar({
-    tipo: 'rifa',
-    nome, whatsapp: tel,
-    numeros: nums.join(', '),
-    quantidade: nums.length,
-    total: totalCarrinho(),
-    codigo,
-    status: 'reservado',
-  });
-
-  nums.forEach(n => STATUS_NUM.set(n, 'reservado'));
-  STATE.rifaReservada = { nums, nome, tel, codigo };
-  salvarRifaLocal();
-  herdarContato(nome, tel);
-  pintarCartela();   // a partir daqui a cartela fica fechada
-
-  btn.disabled = false;
-  btn.textContent = txt;
-  mostrarPagamento();
-}
-
-/* A reserva vale dinheiro: o código é o que liga o comprovante ao número na
-   planilha, e ele só existia na memória da aba. Quem fechava a página depois
-   de reservar voltava sem código e sem o copia-e-cola, e ainda via os próprios
-   números como "reservado" de outra pessoa. */
-function salvarRifaLocal() {
-  try { ls.set(CHAVES.rifa, JSON.stringify(STATE.rifaReservada)); } catch (e) {}
-}
-
-function restaurarRifa() {
-  if (!CONFIG.sorteio.ativo) return;
-
-  let r = null;
-  try { r = JSON.parse(ls.get(CHAVES.rifa) || 'null'); } catch (e) {}
-  if (!r || !Array.isArray(r.nums) || !r.nums.length) return;
-
-  STATE.rifaReservada = r;
-  STATE.codigoRifa = r.codigo;
-
-  /* MEUS precisa voltar cheio, e não só por causa da cor na cartela: o valor
-     do PIX sai de MEUS.size. Sem isso a pessoa copiaria um código de R$ 20
-     para uma reserva de dez números. */
-  r.nums.forEach(n => { MEUS.add(Number(n)); STATUS_NUM.set(Number(n), 'reservado'); });
-
-  pintarCartela();
-  mostrarPagamento(false);
-}
-
-/* `festejar` é falso quando a tela está sendo remontada numa nova visita:
-   confete e rolagem automática pertencem ao momento em que a pessoa reserva,
-   não a toda vez que ela abre o convite. */
-function mostrarPagamento(festejar = true) {
-  const { nums, codigo } = STATE.rifaReservada;
-  const painel = document.getElementById('rifa-pagamento');
-  const form = document.getElementById('rifa-form');
-  if (!painel) return;
-
-  if (form) form.classList.add('hidden');
-  document.getElementById('carrinho')?.classList.add('hidden');
-  painel.classList.remove('hidden');
-
-  const codigoPix = pixCopiaECola();
-  const temCopiaCola = !!codigoPix;
-
-  painel.innerHTML = `
-    <p class="pag-titulo">Obrigado de coração 💛</p>
-    <p class="pag-nums">Seus números: <b>${nums.map(pad2).join(' · ')}</b></p>
-    <p class="pag-total">Contribuição: <b>R$ ${nums.length * CONFIG.sorteio.valor}</b></p>
-
-    <p class="pag-aviso">
-      <b>Isto é um ticket de reserva, ainda não é a confirmação.</b>
-      Os números acima ficam guardados no seu nome, mas só são
-      <b>reservados e confirmados de fato</b> quando você enviar o
-      comprovante do pagamento.
-    </p>
-
-    ${temCopiaCola ? `
-      <button type="button" class="btn btn-primario btn-largo" id="pag-copia">
-        Copiar o PIX
-      </button>
-      <p class="pag-dica">É só colar no app do banco — o valor já vai preenchido.</p>
-    ` : `
-      <p class="pag-dica">Chave PIX</p>
-      <button type="button" class="pag-chave" id="pag-chave">${CONFIG.sorteio.pix.chave || 'a definir'}</button>
-      <p class="pag-dica">Se o app deixar, escreva <b>RIFA ${codigo}</b> na descrição.</p>
-    `}
-
-    <p class="pag-codigo">
-      Seu código: <b>${codigo}</b><br>
-      <small>Mande junto com o comprovante — é assim que a gente acha
-      a sua reserva.</small>
-    </p>
-
-    <a class="btn btn-suave btn-largo" id="pag-wpp" href="#" target="_blank" rel="noopener">
-      Enviar comprovante no WhatsApp
-    </a>
-    <p class="pag-nota">
-      Enquanto o comprovante não chega, seus números aparecem para os outros
-      como <i>reservados</i> — e é o envio dele que fecha a reserva.
-      Obrigado mesmo por essa força. 💗
-    </p>`;
-
-  const copia = document.getElementById('pag-copia');
-  if (copia) copia.addEventListener('click', () =>
-    copiar(codigoPix, 'PIX copiado! Cole no app do banco.'));
-
-  const chave = document.getElementById('pag-chave');
-  if (chave) chave.addEventListener('click', () =>
-    copiar(CONFIG.sorteio.pix.chave, 'Chave PIX copiada!'));
-
-  const wpp = document.getElementById('pag-wpp');
-  if (wpp) {
-    const msg = [
-      `🎟️ *Rifa solidária — código ${codigo}*`, '',
-      `*Nome:* ${STATE.rifaReservada.nome}`,
-      `*Números:* ${nums.map(pad2).join(', ')}`,
-      `*Contribuição:* R$ ${nums.length * CONFIG.sorteio.valor}`,
-      '', 'Segue o comprovante 👇',
-    ].join('\n');
-    const base = CONFIG.whatsappNumero ? `https://wa.me/${CONFIG.whatsappNumero}` : 'https://wa.me/';
-    wpp.href = `${base}?text=${encodeURIComponent(msg)}`;
-  }
-
-  if (festejar) {
-    confete('duo', 40);
-    painel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-}
-
-/* Lê da planilha os números reservados e pagos */
-async function buscarNumerosOcupados() {
-  if (!CONFIG.sheetsEndpoint) return;
-  try {
-    const res = await fetch(`${CONFIG.sheetsEndpoint}?tipo=rifa-ocupados`);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const { ocupados } = await res.json();
-    if (!Array.isArray(ocupados)) return;
-    ocupados.forEach(o => {
-      const n = Number(o.numero);
-      if (!isNaN(n)) STATUS_NUM.set(n, o.status === 'pago' ? 'pago' : 'reservado');
-    });
-    ULTIMA_CONSULTA = Date.now();
-    pintarCartela();
-  } catch (err) {
-    // a cartela destrava assim mesmo: melhor escolher às cegas do que
-    // travar todo mundo porque a planilha não respondeu
-    console.info('[rifa] não deu pra ler os números ocupados.', err);
-  }
 }
 
 function initFormulario() {
@@ -1691,7 +1239,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Depois dos init: as duas remontam telas que os init acabaram de construir
      (a cartela dos 100 números e o bloco de confirmação). */
-  restaurarRifa();
+  RifaCore.restaurarRifa();
   restaurarSessao();
 
   const ics = document.getElementById('btn-ics');
