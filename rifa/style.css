@@ -106,10 +106,12 @@
 .rifa-secao .sub-titulo { font-size: clamp(1.3rem, 4.4vw, 1.6rem); }
 
 /* Cada número mostra o status por baixo dele — não só a cor — pra quem
-   olha rápido (ou usa leitor de tela) não depender de decorar a legenda. */
+   olha rápido (ou usa leitor de tela) não depender de decorar a legenda.
+   10 colunas fixas (não auto-fill) — é a grade 1-100 igual à referência,
+   não um número de colunas que muda com a largura da tela. */
 .cartela-grande {
-  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
 }
 .cartela-grande .num {
   aspect-ratio: auto;
@@ -220,6 +222,7 @@
 .rifa-obrigado span { font-family: initial; }
 
 @media (max-width: 480px) {
-  .cartela-grande { grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
-  .cartela-grande .num { min-height: 2.9rem; font-size: 0.8rem; }
+  .cartela-grande { gap: 4px; }
+  .cartela-grande .num { min-height: 2.6rem; font-size: 0.68rem; }
+  .cartela-grande .num::after { font-size: 0.36rem !important; }
 }
